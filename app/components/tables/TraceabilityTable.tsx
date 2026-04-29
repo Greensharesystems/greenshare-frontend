@@ -228,7 +228,7 @@ function buildTraceabilityRows(
 		);
 		const linkedCircularityCertificate = linkedReceptionCertificate
 			? circularityCertificates.find((certificate) => getLinkedRcids(certificate).includes(String(linkedReceptionCertificate.rcid ?? "")))
-			: null;
+			: undefined;
 
 		return {
 			rnidDate: String(note.rnidDate ?? ""),

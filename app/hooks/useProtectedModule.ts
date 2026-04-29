@@ -12,7 +12,8 @@ export default function useProtectedModule(expectedRole: AuthRole) {
 	const pathname = usePathname();
 	const auth = useAuth();
 	const { isReady, session } = auth;
-	const hasAccess = Boolean(session) && canAccessPath(session.role, pathname) && session.role === expectedRole;
+	const sessionRole = session?.role;
+	const hasAccess = sessionRole !== undefined && canAccessPath(sessionRole, pathname) && sessionRole === expectedRole;
 
 	useEffect(() => {
 		if (!isReady) {

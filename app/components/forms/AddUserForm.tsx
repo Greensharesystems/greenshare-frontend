@@ -97,9 +97,15 @@ export default function AddUserForm({ submitLabel = "Add User", mode = "create",
 		async function loadUser() {
 			setErrorMessage("");
 			setIsLoadingUser(true);
+			const normalizedUserId = userId?.trim();
+
+			if (!normalizedUserId) {
+				setIsLoadingUser(false);
+				return;
+			}
 
 			try {
-				const response = await apiFetch(`/users/${encodeURIComponent(userId)}`, {
+				const response = await apiFetch(`/users/${encodeURIComponent(normalizedUserId)}`, {
 					cache: "no-store",
 				});
 				const payload = (await response.json()) as UserRecord & { detail?: string };
