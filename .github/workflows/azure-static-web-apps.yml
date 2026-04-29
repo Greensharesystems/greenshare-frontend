@@ -17,12 +17,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build and Deploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.SWA_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
           api_location: ""
@@ -39,3 +40,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.SWA_TOKEN }}
           action: "close"
+          app_location: "/"

@@ -2,6 +2,7 @@
 
 import "mapbox-gl/dist/mapbox-gl.css";
 
+import type { FeatureCollection, Point } from "geojson";
 import { Minus, Plus } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
@@ -126,7 +127,7 @@ export default function CollectionSourceMap({
 	className,
 }: CollectionSourceMapProps) {
 	const mapRef = useRef<MapRef | null>(null);
-	const [zoom, setZoom] = useState(INITIAL_VIEW_STATE.zoom);
+	const [zoom, setZoom] = useState<number>(INITIAL_VIEW_STATE.zoom);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 	const normalizedLocations = useMemo(
@@ -143,7 +144,7 @@ export default function CollectionSourceMap({
 		[normalizedLocations],
 	);
 	const activeEmirate = tooltip?.emirate_name ?? null;
-	const emirateGeoJson = useMemo(() => ({
+	const emirateGeoJson = useMemo<FeatureCollection<Point>>(() => ({
 		type: "FeatureCollection",
 		features: EMIRATE_MARKERS.map((marker) => ({
 			type: "Feature",

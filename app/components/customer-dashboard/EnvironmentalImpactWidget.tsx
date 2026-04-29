@@ -107,7 +107,7 @@ function ImpactMetricBlock({ metric }: Readonly<{ metric: EnvironmentalImpactMet
 
 
 function formatMetricNumber(value: number | "TBU", format: EnvironmentalImpactMetric["format"]) {
-	if (format === "tbu") {
+	if (format === "tbu" || value === "TBU") {
 		return "TBU";
 	}
 
