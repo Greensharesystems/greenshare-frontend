@@ -6,9 +6,8 @@ import { type ComponentType, type FormEvent, useEffect, useState, useTransition 
 import { useRouter } from "next/navigation";
 
 import ForgotPasswordModal from "@/app/components/modals/ForgotPasswordModal";
+import { API_BASE_URL } from "@/app/utils/api";
 import useAuth, { getRoleHomeRoute, isAuthRole, writeAuthSession } from "@/app/hooks/useAuth";
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 type ConnectIconProps = Readonly<{
 	className?: string;
@@ -117,7 +116,7 @@ export default function Home() {
 		setErrorMessage("");
 
 		try {
-			const response = await fetch(`${apiBaseUrl}/login`, {
+			const response = await fetch(`${API_BASE_URL}/auth/login`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -127,13 +126,11 @@ export default function Home() {
 
 			const payload = (await response.json()) as {
 				detail?: string;
+				access_token?: string;
+				token_type?: string;
 				role?: string;
-				email?: string;
-				displayName?: string;
-				identifier?: string;
-				accountType?: "user";
-				accessToken?: string;
-				customerId?: string | null;
+				user_id?: string;
+				cid?: string | null;
 			};
 
 			if (!response.ok) {
@@ -144,24 +141,21 @@ export default function Home() {
 			if (
 				typeof payload.role !== "string"
 				|| !isAuthRole(payload.role)
-				|| typeof payload.email !== "string"
-				|| typeof payload.displayName !== "string"
-				|| typeof payload.identifier !== "string"
-				|| payload.accountType !== "user"
-				|| typeof payload.accessToken !== "string"
+				|| typeof payload.user_id !== "string"
+				|| typeof payload.access_token !== "string"
 			) {
 				setErrorMessage("Your account role is not recognized.");
 				return;
 			}
 
 			writeAuthSession({
-				email: payload.email,
-				displayName: payload.displayName,
-				identifier: payload.identifier,
-				accountType: payload.accountType,
+				email,
+				displayName: email,
+				identifier: payload.user_id,
+				accountType: "user",
 				role: payload.role,
-				accessToken: payload.accessToken,
-				customerId: typeof payload.customerId === "string" ? payload.customerId : null,
+				accessToken: payload.access_token,
+				customerId: typeof payload.cid === "string" ? payload.cid : null,
 			});
 
 			const authenticatedRole = payload.role;
