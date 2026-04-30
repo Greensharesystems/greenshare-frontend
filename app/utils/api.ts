@@ -1,7 +1,13 @@
 import { clearAuthSession, readAuthSession } from "@/app/hooks/useAuth";
 
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_URL) {
+	throw new Error("NEXT_PUBLIC_API_URL is not defined");
+}
+
+export default API_URL;
 
 
 export async function apiFetch(path: string, init?: RequestInit) {
@@ -34,7 +40,7 @@ export function getApiUrl(path: string) {
 		return path;
 	}
 
-	return `${API_BASE_URL}${path}`;
+	return `${API_URL}${path}`;
 }
 
 
