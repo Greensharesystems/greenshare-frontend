@@ -1,11 +1,9 @@
 import { clearAuthSession, readAuthSession } from "@/app/hooks/useAuth";
 
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_URL) {
-	throw new Error("NEXT_PUBLIC_API_URL is not defined");
-}
+export const API_URL =
+	process.env.NEXT_PUBLIC_API_URL ||
+	"https://greenshare-backend-e0g5bmbndzgeajfy.eastasia-01.azurewebsites.net";
 
 export default API_URL;
 
