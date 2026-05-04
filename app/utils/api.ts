@@ -1,9 +1,7 @@
 import { clearAuthSession, readAuthSession } from "@/app/hooks/useAuth";
 
 
-export const API_URL =
-	process.env.NEXT_PUBLIC_API_URL ||
-	"https://greenshare-backend-e0g5bmbndzgeajfy.eastasia-01.azurewebsites.net";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL?.trim() ?? "";
 
 export default API_URL;
 
@@ -36,6 +34,10 @@ export async function apiFetch(path: string, init?: RequestInit) {
 export function getApiUrl(path: string) {
 	if (path.startsWith("http://") || path.startsWith("https://")) {
 		return path;
+	}
+
+	if (!API_URL) {
+		throw new Error("NEXT_PUBLIC_API_URL is not set.");
 	}
 
 	return `${API_URL}${path}`;
