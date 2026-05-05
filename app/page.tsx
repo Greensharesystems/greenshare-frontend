@@ -130,6 +130,7 @@ export default function Home() {
 				token_type?: string;
 				role?: string;
 				user_id?: string;
+				display_name?: string;
 				cid?: string | null;
 			};
 
@@ -148,9 +149,11 @@ export default function Home() {
 				return;
 			}
 
+			const displayName = resolveLoginDisplayName(payload.display_name, payload.access_token, email);
+
 			writeAuthSession({
 				email,
-				displayName: email,
+				displayName: displayName,
 				identifier: payload.user_id,
 				accountType: "user",
 				role: payload.role,
@@ -165,6 +168,38 @@ export default function Home() {
 			});
 		} catch {
 			setErrorMessage("Unable to reach the Greenshare backend.");
+		}
+	}
+
+	function resolveLoginDisplayName(
+		payloadDisplayName: string | undefined,
+		accessToken: string,
+		fallbackEmail: string,
+	) {
+		if (typeof payloadDisplayName === "string" && payloadDisplayName.trim()) {
+			return payloadDisplayName.trim();
+		}
+
+		const tokenPayload = decodeJwtPayload(accessToken);
+		const tokenDisplayName = typeof tokenPayload?.displayName === "string" ? tokenPayload.displayName.trim() : "";
+
+		return tokenDisplayName || fallbackEmail;
+	}
+
+	function decodeJwtPayload(token: string): Record<string, unknown> | null {
+		const parts = token.split(".");
+
+		if (parts.length < 2) {
+			return null;
+		}
+
+		try {
+			const normalizedPayload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+			const paddedPayload = normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, "=");
+			const decodedPayload = atob(paddedPayload);
+			return JSON.parse(decodedPayload) as Record<string, unknown>;
+		} catch {
+			return null;
 		}
 	}
 

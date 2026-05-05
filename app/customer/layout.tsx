@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import AppShell from "@/app/components/layout/AppShell";
 import Header from "@/app/components/layout/Header";
 import Sidebar from "@/app/components/layout/Sidebar";
-import useCustomerProfile from "@/app/hooks/useCustomerProfile";
 import useProtectedModule from "@/app/hooks/useProtectedModule";
 import {
 	CUSTOMER_BACKGROUND_EVENT,
@@ -30,9 +29,7 @@ export default function CustomerLayout({
 }>) {
 	const router = useRouter();
 	const { session, isReady, logout, hasAccess } = useProtectedModule("customer");
-	const { profile } = useCustomerProfile();
 	const [appBackgroundClassName, setAppBackgroundClassName] = useState(resolveCustomerBackgroundOption(undefined).appClassName);
-	const companyName = profile?.companyName ?? "";
 
 	useEffect(() => {
 		function applyStoredBackground() {
@@ -59,6 +56,8 @@ export default function CustomerLayout({
 		router.replace("/");
 	}
 
+	const roleLetter = session.role === "admin" ? "A" : session.role === "customer" ? "C" : "E";
+
 	return (
 		<AppShell
 			className={appBackgroundClassName}
@@ -69,10 +68,10 @@ export default function CustomerLayout({
 					profile={
 						<div className="flex min-w-44 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5">
 							<div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#36B44D] text-xs font-semibold text-white">
-								C
+								{roleLetter}
 							</div>
 							<div className="hidden min-w-0 text-left sm:block">
-								<p className="truncate text-xs font-semibold text-slate-900">{companyName}</p>
+								<p className="truncate text-xs font-semibold text-slate-900">{session.displayName}</p>
 							</div>
 						</div>
 					}
