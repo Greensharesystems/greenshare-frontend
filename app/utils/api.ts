@@ -1,11 +1,12 @@
 import { clearAuthSession, readAuthSession } from "@/app/hooks/useAuth";
 
 
-export const API_URL =
-	process.env.NEXT_PUBLIC_API_URL ||
-	"https://greenshare-backend-e0g5bmbndzgeajfy.eastasia-01.azurewebsites.net";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default API_URL;
+
+
+let hasLoggedMissingApiUrl = false;
 
 
 export async function apiFetch(path: string, init?: RequestInit) {
@@ -38,10 +39,30 @@ export function getApiUrl(path: string) {
 		return path;
 	}
 
+	if (!hasConfiguredApiUrl()) {
+		logMissingApiUrl();
+		throw new Error("NEXT_PUBLIC_API_URL is not set.");
+	}
+
 	return `${API_URL}${path}`;
 }
 
 
 function buildApiUrl(path: string) {
 	return getApiUrl(path);
+}
+
+
+function hasConfiguredApiUrl() {
+	return typeof API_URL === "string" && API_URL.trim().length > 0;
+}
+
+
+function logMissingApiUrl() {
+	if (hasLoggedMissingApiUrl) {
+		return;
+	}
+
+	hasLoggedMissingApiUrl = true;
+	console.error("NEXT_PUBLIC_API_URL is missing. Frontend API requests cannot be resolved.");
 }
