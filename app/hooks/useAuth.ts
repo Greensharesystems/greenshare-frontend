@@ -62,15 +62,47 @@ export function readAuthSession(): AuthSession | null {
 			return null;
 		}
 
+		const repairedDisplayName = resolveDisplayName(parsedValue.displayName, parsedValue.email, parsedValue.accessToken);
+
 		return {
 			email: parsedValue.email,
-			displayName: parsedValue.displayName,
+			displayName: repairedDisplayName,
 			identifier: parsedValue.identifier,
 			accountType: parsedValue.accountType,
 			role: parsedValue.role,
 			accessToken: parsedValue.accessToken,
 			customerId: typeof parsedValue.customerId === "string" ? parsedValue.customerId : null,
 		};
+	} catch {
+		return null;
+	}
+}
+
+
+function resolveDisplayName(displayName: string, email: string, accessToken: string): string {
+	if (displayName.trim() && displayName !== email) {
+		return displayName;
+	}
+
+	const tokenPayload = decodeJwtPayload(accessToken);
+	const tokenDisplayName = typeof tokenPayload?.displayName === "string" ? tokenPayload.displayName.trim() : "";
+
+	return tokenDisplayName || displayName;
+}
+
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+	const parts = token.split(".");
+
+	if (parts.length < 2) {
+		return null;
+	}
+
+	try {
+		const normalizedPayload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+		const paddedPayload = normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, "=");
+		const decodedPayload = atob(paddedPayload);
+		return JSON.parse(decodedPayload) as Record<string, unknown>;
 	} catch {
 		return null;
 	}

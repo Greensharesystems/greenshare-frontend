@@ -36,6 +36,8 @@ export default function AdminLayout({
 		router.replace("/");
 	}
 
+	const roleLetter = session.role === "admin" ? "A" : session.role === "customer" ? "C" : "E";
+
 	return (
 		<AppShell
 			header={
@@ -43,11 +45,10 @@ export default function AdminLayout({
 					profile={
 						<div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5">
 							<div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#36B44D] text-xs font-semibold text-white">
-								A
+								{roleLetter}
 							</div>
 							<div className="hidden text-left sm:block">
 								<p className="text-xs font-semibold text-slate-900">{session.displayName}</p>
-								<p className="text-xs text-slate-500">Administrator</p>
 							</div>
 						</div>
 					}

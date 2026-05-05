@@ -45,6 +45,8 @@ export default function EmployeeLayout({
 		router.replace("/");
 	}
 
+	const roleLetter = session.role === "admin" ? "A" : session.role === "customer" ? "C" : "E";
+
 	function getNavItemClassName(isActive: boolean) {
 		return [
 			"flex min-h-11 w-full items-center justify-center rounded-2xl px-2 text-center text-xs font-medium transition",
@@ -114,11 +116,10 @@ export default function EmployeeLayout({
 					profile={
 						<div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5">
 							<div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#36B44D] text-xs font-semibold text-white">
-								E
+								{roleLetter}
 							</div>
 							<div className="hidden text-left sm:block">
 								<p className="text-xs font-semibold text-slate-900">{session.displayName}</p>
-								<p className="text-xs text-slate-500">Employee</p>
 							</div>
 						</div>
 					}
