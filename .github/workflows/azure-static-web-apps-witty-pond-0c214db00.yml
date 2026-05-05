@@ -69,6 +69,7 @@ jobs:
           api_location: ""
           output_location: ".next"
           skip_app_build: true
+          deployment_environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name }}
         env:
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
 
