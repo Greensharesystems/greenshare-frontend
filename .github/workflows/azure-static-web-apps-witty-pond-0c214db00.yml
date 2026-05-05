@@ -58,8 +58,9 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
 
-      - name: Deploy to Azure Static Web Apps
-        id: builddeploy
+      - name: Deploy Production
+        if: github.ref_name == 'main'
+        id: deployproduction
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WITTY_POND_0C214DB00 }}
@@ -69,9 +70,24 @@ jobs:
           api_location: ""
           output_location: ".next"
           skip_app_build: true
-          deployment_environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name }}
         env:
-          NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL_PRODUCTION }}
+
+      - name: Deploy Dev Preview
+        if: github.ref_name == 'dev'
+        id: deploydevpreview
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WITTY_POND_0C214DB00 }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          api_location: ""
+          output_location: ".next"
+          skip_app_build: true
+          deployment_environment: "dev"
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
