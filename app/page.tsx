@@ -6,7 +6,7 @@ import { type ComponentType, type FormEvent, useEffect, useState, useTransition 
 import { useRouter } from "next/navigation";
 
 import ForgotPasswordModal from "@/app/components/modals/ForgotPasswordModal";
-import { API_URL } from "@/app/utils/api";
+import { getApiUrl } from "@/app/utils/api";
 import useAuth, { getRoleHomeRoute, isAuthRole, writeAuthSession } from "@/app/hooks/useAuth";
 
 type ConnectIconProps = Readonly<{
@@ -116,7 +116,7 @@ export default function Home() {
 		setErrorMessage("");
 
 		try {
-			const response = await fetch(`${API_URL}/auth/login`, {
+			const response = await fetch(getApiUrl("/auth/login"), {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
