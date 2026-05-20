@@ -13,7 +13,7 @@ import TableFilters, {
 	type TableSortValue,
 } from "@/app/components/ui/TableFilters";
 import TableActions from "@/app/components/ui/TableActions";
-import { apiFetch, logPdfRequest, openPdfWithAuth } from "@/app/utils/api";
+import { apiFetch, downloadPdfWithAuth, openPdfWithAuth } from "@/app/utils/api";
 
 type CircularityCertificateRow = Readonly<{
 	id: number;
@@ -132,36 +132,13 @@ export default function CircularityCertificateTable({
 		try {
 			const pdfPath = `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/download`;
 
-			logPdfRequest({
-				action: "download",
+			await downloadPdfWithAuth({
 				pdfType: "circularity-certificate",
 				documentId: circularityCertificateReference,
 				path: pdfPath,
+				fallbackErrorMessage: "Unable to download that circularity certificate right now.",
+				fallbackFilename: row.ccid || "circularity-certificate.pdf",
 			});
-
-			const response = await apiFetch(pdfPath, {
-				cache: "no-store",
-			});
-
-			if (!response.ok) {
-				const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-				throw new Error(payload?.detail ?? "Unable to download that circularity certificate right now.");
-			}
-
-			const pdfBlob = await response.blob();
-			const downloadUrl = window.URL.createObjectURL(pdfBlob);
-			const link = document.createElement("a");
-			const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), row.ccid || "circularity-certificate.pdf");
-
-			link.href = downloadUrl;
-			link.download = filename;
-			link.style.display = "none";
-			document.body.append(link);
-			link.click();
-			link.remove();
-			window.setTimeout(() => {
-				window.URL.revokeObjectURL(downloadUrl);
-			}, 1000);
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to download that circularity certificate right now.");
 		}
@@ -324,24 +301,6 @@ function normalizeStatus(status: string): CircularityCertificateRow["status"] {
 
 function formatLinkedIds(values: ReadonlyArray<string>) {
 	return values.filter(Boolean).join(", ") || "-";
-}
-
-function extractDownloadFilename(contentDisposition: string | null, fallbackCcid: string) {
-	if (!contentDisposition) {
-		return ensurePdfFilename(fallbackCcid);
-	}
-
-	const matchedFilename = /filename="?([^";]+)"?/i.exec(contentDisposition);
-	if (!matchedFilename?.[1]) {
-		return ensurePdfFilename(fallbackCcid);
-	}
-
-	return ensurePdfFilename(matchedFilename[1]);
-}
-
-function ensurePdfFilename(filename: string) {
-	const normalizedFilename = filename.trim() || "circularity-certificate";
-	return normalizedFilename.toLowerCase().endsWith(".pdf") ? normalizedFilename : `${normalizedFilename}.pdf`;
 }
 
 function getCircularityCertificatePdfReference(row: CircularityCertificateRow) {

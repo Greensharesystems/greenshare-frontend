@@ -12,7 +12,7 @@ import TableFilters, {
 	type TableSortValue,
 } from "@/app/components/ui/TableFilters";
 import TableActions from "@/app/components/ui/TableActions";
-import { apiFetch, logPdfRequest, openPdfWithAuth } from "@/app/utils/api";
+import { apiFetch, downloadPdfWithAuth, openPdfWithAuth } from "@/app/utils/api";
 
 export type CertificateTablePermissions = Readonly<{
 	canRemove: boolean;
@@ -209,36 +209,13 @@ export default function ReceptionCertificateTable({
 		try {
 			const pdfPath = `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/download`;
 
-			logPdfRequest({
-				action: "download",
+			await downloadPdfWithAuth({
 				pdfType: "reception-certificate",
 				documentId: receptionCertificateReference,
 				path: pdfPath,
+				fallbackErrorMessage: "Unable to download that reception certificate right now.",
+				fallbackFilename: row.rcid || "reception-certificate.pdf",
 			});
-
-			const response = await apiFetch(pdfPath, {
-				cache: "no-store",
-			});
-
-			if (!response.ok) {
-				const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-				throw new Error(payload?.detail ?? "Unable to download that reception certificate right now.");
-			}
-
-			const pdfBlob = await response.blob();
-			const downloadUrl = window.URL.createObjectURL(pdfBlob);
-			const link = document.createElement("a");
-			const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), row.rcid || "reception-certificate.pdf");
-
-			link.href = downloadUrl;
-			link.download = filename;
-			link.style.display = "none";
-			document.body.append(link);
-			link.click();
-			link.remove();
-			window.setTimeout(() => {
-				window.URL.revokeObjectURL(downloadUrl);
-			}, 1000);
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to download that reception certificate right now.");
 		}
@@ -434,25 +411,6 @@ function renderCircularityCertificateCell(
 		</button>
 	);
 }
-
-function extractDownloadFilename(contentDisposition: string | null, fallbackRcid: string) {
-	if (!contentDisposition) {
-		return ensurePdfFilename(fallbackRcid);
-	}
-
-	const matchedFilename = /filename="?([^";]+)"?/i.exec(contentDisposition);
-	if (!matchedFilename?.[1]) {
-		return ensurePdfFilename(fallbackRcid);
-	}
-
-	return ensurePdfFilename(matchedFilename[1]);
-}
-
-function ensurePdfFilename(filename: string) {
-	const normalizedFilename = filename.trim() || "reception-certificate";
-	return normalizedFilename.toLowerCase().endsWith(".pdf") ? normalizedFilename : `${normalizedFilename}.pdf`;
-}
-
 
 function getReceptionCertificatePdfReference(row: ReceptionCertificateRow) {
 	if (row.rcid.trim()) {

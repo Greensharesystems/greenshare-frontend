@@ -24,6 +24,14 @@ type OpenPdfWithAuthOptions = Readonly<{
 	fallbackErrorMessage: string;
 }>;
 
+type DownloadPdfWithAuthOptions = Readonly<{
+	pdfType: string;
+	documentId: string | number;
+	path: string;
+	fallbackErrorMessage: string;
+	fallbackFilename: string;
+}>;
+
 
 export async function apiFetch(path: string, init?: RequestInit) {
 	const session = readAuthSession();
@@ -96,8 +104,6 @@ export async function openPdfWithAuth({ pdfType, documentId, path, fallbackError
 		path,
 	});
 
-	const previewWindow = typeof window !== "undefined" ? window.open("", "_blank") : null;
-
 	try {
 		const response = await apiFetch(path, {
 			cache: "no-store",
@@ -109,20 +115,48 @@ export async function openPdfWithAuth({ pdfType, documentId, path, fallbackError
 
 		const pdfBlob = await response.blob();
 		const previewUrl = window.URL.createObjectURL(pdfBlob);
-
-		if (previewWindow) {
-			previewWindow.location.href = previewUrl;
-		} else {
-			window.open(previewUrl, "_blank", "noopener,noreferrer");
-		}
+		window.open(previewUrl, "_blank");
 
 		window.setTimeout(() => {
 			window.URL.revokeObjectURL(previewUrl);
 		}, 60_000);
-	} catch (error) {
-		previewWindow?.close();
+	}
+	catch (error) {
 		throw error;
 	}
+}
+
+
+export async function downloadPdfWithAuth({ pdfType, documentId, path, fallbackErrorMessage, fallbackFilename }: DownloadPdfWithAuthOptions) {
+	logPdfRequest({
+		action: "download",
+		pdfType,
+		documentId,
+		path,
+	});
+
+	const response = await apiFetch(path, {
+		cache: "no-store",
+	});
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, fallbackErrorMessage));
+	}
+
+	const pdfBlob = await response.blob();
+	const downloadUrl = window.URL.createObjectURL(pdfBlob);
+	const link = document.createElement("a");
+	const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), fallbackFilename);
+
+	link.href = downloadUrl;
+	link.download = filename;
+	link.style.display = "none";
+	document.body.append(link);
+	link.click();
+	link.remove();
+	window.setTimeout(() => {
+		window.URL.revokeObjectURL(downloadUrl);
+	}, 1_000);
 }
 
 
@@ -156,4 +190,24 @@ function logMissingApiUrl() {
 
 	hasLoggedMissingApiUrl = true;
 	console.error("NEXT_PUBLIC_API_URL is missing. Frontend API requests cannot be resolved.");
+}
+
+
+function extractDownloadFilename(contentDisposition: string | null, fallbackFilename: string) {
+	if (!contentDisposition) {
+		return ensurePdfFilename(fallbackFilename);
+	}
+
+	const matchedFilename = /filename="?([^";]+)"?/i.exec(contentDisposition);
+	if (!matchedFilename?.[1]) {
+		return ensurePdfFilename(fallbackFilename);
+	}
+
+	return ensurePdfFilename(matchedFilename[1]);
+}
+
+
+function ensurePdfFilename(filename: string) {
+	const normalizedFilename = filename.trim() || "document";
+	return normalizedFilename.toLowerCase().endsWith(".pdf") ? normalizedFilename : `${normalizedFilename}.pdf`;
 }
