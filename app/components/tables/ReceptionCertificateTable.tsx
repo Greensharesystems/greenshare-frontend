@@ -12,7 +12,7 @@ import TableFilters, {
 	type TableSortValue,
 } from "@/app/components/ui/TableFilters";
 import TableActions from "@/app/components/ui/TableActions";
-import { apiFetch, getApiUrl } from "@/app/utils/api";
+import { apiFetch, downloadPdfWithAuth, openPdfWithAuth } from "@/app/utils/api";
 
 export type CertificateTablePermissions = Readonly<{
 	canRemove: boolean;
@@ -125,7 +125,7 @@ export default function ReceptionCertificateTable({
 		}
 	}
 
-	function handleViewCircularityCertificate(circularityCertificateReference: string) {
+	async function handleViewCircularityCertificate(circularityCertificateReference: string) {
 		setErrorMessage("");
 		const session = readAuthSession();
 
@@ -139,10 +139,16 @@ export default function ReceptionCertificateTable({
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "circularity-certificate",
+				documentId: circularityCertificateReference,
+				path: `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that circularity certificate right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
+		}
 	}
 
 	async function handleRemoveReceptionCertificate(rcid: string) {
@@ -164,7 +170,7 @@ export default function ReceptionCertificateTable({
 		}
 	}
 
-	function handleViewReceptionCertificate(row: ReceptionCertificateRow) {
+	async function handleViewReceptionCertificate(row: ReceptionCertificateRow) {
 		setErrorMessage("");
 		const session = readAuthSession();
 		const receptionCertificateReference = getReceptionCertificatePdfReference(row);
@@ -179,10 +185,16 @@ export default function ReceptionCertificateTable({
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "reception-certificate",
+				documentId: receptionCertificateReference,
+				path: `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that reception certificate right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.");
+		}
 	}
 
 	async function handleDownloadReceptionCertificate(row: ReceptionCertificateRow) {
@@ -195,29 +207,15 @@ export default function ReceptionCertificateTable({
 		}
 
 		try {
-			const response = await apiFetch(`/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/download`, {
-				cache: "no-store",
+			const pdfPath = `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/download`;
+
+			await downloadPdfWithAuth({
+				pdfType: "reception-certificate",
+				documentId: receptionCertificateReference,
+				path: pdfPath,
+				fallbackErrorMessage: "Unable to download that reception certificate right now.",
+				fallbackFilename: row.rcid || "reception-certificate.pdf",
 			});
-
-			if (!response.ok) {
-				const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-				throw new Error(payload?.detail ?? "Unable to download that reception certificate right now.");
-			}
-
-			const pdfBlob = await response.blob();
-			const downloadUrl = window.URL.createObjectURL(pdfBlob);
-			const link = document.createElement("a");
-			const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), row.rcid || "reception-certificate.pdf");
-
-			link.href = downloadUrl;
-			link.download = filename;
-			link.style.display = "none";
-			document.body.append(link);
-			link.click();
-			link.remove();
-			window.setTimeout(() => {
-				window.URL.revokeObjectURL(downloadUrl);
-			}, 1000);
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to download that reception certificate right now.");
 		}
@@ -413,25 +411,6 @@ function renderCircularityCertificateCell(
 		</button>
 	);
 }
-
-function extractDownloadFilename(contentDisposition: string | null, fallbackRcid: string) {
-	if (!contentDisposition) {
-		return ensurePdfFilename(fallbackRcid);
-	}
-
-	const matchedFilename = /filename="?([^";]+)"?/i.exec(contentDisposition);
-	if (!matchedFilename?.[1]) {
-		return ensurePdfFilename(fallbackRcid);
-	}
-
-	return ensurePdfFilename(matchedFilename[1]);
-}
-
-function ensurePdfFilename(filename: string) {
-	const normalizedFilename = filename.trim() || "reception-certificate";
-	return normalizedFilename.toLowerCase().endsWith(".pdf") ? normalizedFilename : `${normalizedFilename}.pdf`;
-}
-
 
 function getReceptionCertificatePdfReference(row: ReceptionCertificateRow) {
 	if (row.rcid.trim()) {

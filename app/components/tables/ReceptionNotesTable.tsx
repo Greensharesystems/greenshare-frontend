@@ -7,7 +7,7 @@ import { readAuthSession } from "@/app/hooks/useAuth";
 import StatusBadge from "@/app/components/ui/StatusBadge";
 import TableFilters, { DEFAULT_TABLE_SORT_OPTIONS, sortTableRows, type TableSortValue } from "@/app/components/ui/TableFilters";
 import TableActions from "@/app/components/ui/TableActions";
-import { apiFetch, getApiUrl } from "@/app/utils/api";
+import { apiFetch, downloadPdfWithAuth, openPdfWithAuth } from "@/app/utils/api";
 
 const columns: ReadonlyArray<{ key: string; label: ReactNode }> = [
 	{ key: "rnidDate", label: "RNID Date" },
@@ -202,7 +202,7 @@ export default function ReceptionNotesTable() {
 		}
 	}
 
-	function handleViewReceptionNote(row: ReceptionNoteRow) {
+	async function handleViewReceptionNote(row: ReceptionNoteRow) {
 		setErrorMessage("");
 		const session = readAuthSession();
 
@@ -211,45 +211,37 @@ export default function ReceptionNotesTable() {
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/reception-notes/${row.id}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "reception-note",
+				documentId: row.id,
+				path: `/reception-notes/${row.id}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that reception note right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception note right now.");
+		}
 	}
 
 	async function handleDownloadReceptionNote(row: ReceptionNoteRow) {
 		setErrorMessage("");
 
 		try {
-			const response = await apiFetch(`/reception-notes/${row.id}/pdf/download`, {
-				cache: "no-store",
+			const pdfPath = `/reception-notes/${row.id}/pdf/download`;
+
+			await downloadPdfWithAuth({
+				pdfType: "reception-note",
+				documentId: row.id,
+				path: pdfPath,
+				fallbackErrorMessage: "Unable to download that reception note right now.",
+				fallbackFilename: row.rnid || "reception-note.pdf",
 			});
-
-			if (!response.ok) {
-				const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
-				throw new Error(payload?.detail ?? "Unable to download that reception note right now.");
-			}
-
-			const pdfBlob = await response.blob();
-			const downloadUrl = window.URL.createObjectURL(pdfBlob);
-			const link = document.createElement("a");
-			const filename = extractDownloadFilename(response.headers.get("Content-Disposition"), row.rnid || "reception-note.pdf");
-
-			link.href = downloadUrl;
-			link.download = filename;
-			link.style.display = "none";
-			document.body.append(link);
-			link.click();
-			link.remove();
-			window.setTimeout(() => {
-				window.URL.revokeObjectURL(downloadUrl);
-			}, 1000);
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to download that reception note right now.");
 		}
 	}
 
-	function handleViewReceptionCertificate(receptionCertificateReference: string) {
+	async function handleViewReceptionCertificate(receptionCertificateReference: string) {
 		setErrorMessage("");
 		const session = readAuthSession();
 
@@ -263,10 +255,16 @@ export default function ReceptionNotesTable() {
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "reception-certificate",
+				documentId: receptionCertificateReference,
+				path: `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that reception certificate right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.");
+		}
 	}
 
 	useEffect(() => {
@@ -408,20 +406,3 @@ function renderReceptionCertificateCell(
 }
 
 
-function extractDownloadFilename(contentDisposition: string | null, fallbackRnid: string) {
-	if (!contentDisposition) {
-		return ensurePdfFilename(fallbackRnid);
-	}
-
-	const matchedFilename = /filename="?([^";]+)"?/i.exec(contentDisposition);
-	if (!matchedFilename?.[1]) {
-		return ensurePdfFilename(fallbackRnid);
-	}
-
-	return ensurePdfFilename(matchedFilename[1]);
-}
-
-function ensurePdfFilename(filename: string) {
-	const normalizedFilename = filename.trim() || "reception-note";
-	return normalizedFilename.toLowerCase().endsWith(".pdf") ? normalizedFilename : `${normalizedFilename}.pdf`;
-}
