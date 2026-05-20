@@ -83,8 +83,8 @@ jobs:
           action: "upload"
           app_location: "/"
           api_location: ""
-          output_location: ".next"
-          skip_app_build: true
+          output_location: ""
+          skip_app_build: false
           deployment_environment: "dev"
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}
