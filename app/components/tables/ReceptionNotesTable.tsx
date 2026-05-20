@@ -7,7 +7,7 @@ import { readAuthSession } from "@/app/hooks/useAuth";
 import StatusBadge from "@/app/components/ui/StatusBadge";
 import TableFilters, { DEFAULT_TABLE_SORT_OPTIONS, sortTableRows, type TableSortValue } from "@/app/components/ui/TableFilters";
 import TableActions from "@/app/components/ui/TableActions";
-import { apiFetch, getApiUrl } from "@/app/utils/api";
+import { apiFetch, logPdfRequest, openPdfWithAuth } from "@/app/utils/api";
 
 const columns: ReadonlyArray<{ key: string; label: ReactNode }> = [
 	{ key: "rnidDate", label: "RNID Date" },
@@ -202,7 +202,7 @@ export default function ReceptionNotesTable() {
 		}
 	}
 
-	function handleViewReceptionNote(row: ReceptionNoteRow) {
+	async function handleViewReceptionNote(row: ReceptionNoteRow) {
 		setErrorMessage("");
 		const session = readAuthSession();
 
@@ -211,17 +211,32 @@ export default function ReceptionNotesTable() {
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/reception-notes/${row.id}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "reception-note",
+				documentId: row.id,
+				path: `/reception-notes/${row.id}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that reception note right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception note right now.");
+		}
 	}
 
 	async function handleDownloadReceptionNote(row: ReceptionNoteRow) {
 		setErrorMessage("");
 
 		try {
-			const response = await apiFetch(`/reception-notes/${row.id}/pdf/download`, {
+			const pdfPath = `/reception-notes/${row.id}/pdf/download`;
+
+			logPdfRequest({
+				action: "download",
+				pdfType: "reception-note",
+				documentId: row.id,
+				path: pdfPath,
+			});
+
+			const response = await apiFetch(pdfPath, {
 				cache: "no-store",
 			});
 
@@ -249,7 +264,7 @@ export default function ReceptionNotesTable() {
 		}
 	}
 
-	function handleViewReceptionCertificate(receptionCertificateReference: string) {
+	async function handleViewReceptionCertificate(receptionCertificateReference: string) {
 		setErrorMessage("");
 		const session = readAuthSession();
 
@@ -263,10 +278,16 @@ export default function ReceptionNotesTable() {
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "reception-certificate",
+				documentId: receptionCertificateReference,
+				path: `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that reception certificate right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.");
+		}
 	}
 
 	useEffect(() => {

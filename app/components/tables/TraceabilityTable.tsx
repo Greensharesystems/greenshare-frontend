@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { readAuthSession } from "@/app/hooks/useAuth";
 import StatusBadge from "@/app/components/ui/StatusBadge";
 import TableFilters, { DATE_ONLY_TABLE_SORT_OPTIONS, sortTableRows, type TableSortValue } from "@/app/components/ui/TableFilters";
-import { apiFetch, getApiUrl } from "@/app/utils/api";
+import { apiFetch, openPdfWithAuth } from "@/app/utils/api";
 
 const columns = [
 	"RNID Date",
@@ -67,7 +67,7 @@ export default function TraceabilityTable() {
 	const [errorMessage, setErrorMessage] = useState("");
 	const [sortValue, setSortValue] = useState<TableSortValue>("date-desc");
 
-	function openDocumentPreview(kind: "reception-note" | "reception-certificate" | "circularity-certificate", reference: string) {
+	async function openDocumentPreview(kind: "reception-note" | "reception-certificate" | "circularity-certificate", reference: string) {
 		setErrorMessage("");
 		const session = readAuthSession();
 
@@ -84,12 +84,21 @@ export default function TraceabilityTable() {
 
 		const path =
 			kind === "reception-note"
-				? `/reception-notes/${encodeURIComponent(normalizedReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`
+				? `/reception-notes/${encodeURIComponent(normalizedReference)}/pdf/view`
 				: kind === "reception-certificate"
-					? `/reception-certificates/${encodeURIComponent(normalizedReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`
-					: `/circularity-certificates/${encodeURIComponent(normalizedReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`;
+					? `/reception-certificates/${encodeURIComponent(normalizedReference)}/pdf/view`
+					: `/circularity-certificates/${encodeURIComponent(normalizedReference)}/pdf/view`;
 
-		window.open(getApiUrl(path), "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: kind,
+				documentId: normalizedReference,
+				path,
+				fallbackErrorMessage: "Unable to preview that document right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that document right now.");
+		}
 	}
 
 	useEffect(() => {

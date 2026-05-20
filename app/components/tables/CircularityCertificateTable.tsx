@@ -13,7 +13,7 @@ import TableFilters, {
 	type TableSortValue,
 } from "@/app/components/ui/TableFilters";
 import TableActions from "@/app/components/ui/TableActions";
-import { apiFetch, getApiUrl } from "@/app/utils/api";
+import { apiFetch, logPdfRequest, openPdfWithAuth } from "@/app/utils/api";
 
 type CircularityCertificateRow = Readonly<{
 	id: number;
@@ -93,7 +93,7 @@ export default function CircularityCertificateTable({
 		}
 	}
 
-	function handleViewCircularityCertificate(row: CircularityCertificateRow) {
+	async function handleViewCircularityCertificate(row: CircularityCertificateRow) {
 		setErrorMessage("");
 		const session = readAuthSession();
 		const circularityCertificateReference = getCircularityCertificatePdfReference(row);
@@ -108,10 +108,16 @@ export default function CircularityCertificateTable({
 			return;
 		}
 
-		const previewUrl = getApiUrl(
-			`/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/view?access_token=${encodeURIComponent(session.accessToken)}`,
-		);
-		window.open(previewUrl, "_blank", "noopener,noreferrer");
+		try {
+			await openPdfWithAuth({
+				pdfType: "circularity-certificate",
+				documentId: circularityCertificateReference,
+				path: `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/view`,
+				fallbackErrorMessage: "Unable to preview that circularity certificate right now.",
+			});
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
+		}
 	}
 
 	async function handleDownloadCircularityCertificate(row: CircularityCertificateRow) {
@@ -124,7 +130,16 @@ export default function CircularityCertificateTable({
 		}
 
 		try {
-			const response = await apiFetch(`/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/download`, {
+			const pdfPath = `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/download`;
+
+			logPdfRequest({
+				action: "download",
+				pdfType: "circularity-certificate",
+				documentId: circularityCertificateReference,
+				path: pdfPath,
+			});
+
+			const response = await apiFetch(pdfPath, {
 				cache: "no-store",
 			});
 
