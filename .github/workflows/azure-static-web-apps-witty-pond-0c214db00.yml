@@ -28,6 +28,7 @@ jobs:
           lfs: false
 
       - name: Setup Node.js
+        if: github.ref_name != 'dev'
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -48,12 +49,15 @@ jobs:
           fi
 
       - name: Install dependencies
+        if: github.ref_name != 'dev'
         run: npm ci
 
       - name: Clean previous build output
+        if: github.ref_name != 'dev'
         run: rm -rf .next
 
       - name: Build Next.js app
+        if: github.ref_name != 'dev'
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
