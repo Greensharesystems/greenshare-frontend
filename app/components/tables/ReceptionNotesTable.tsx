@@ -72,6 +72,7 @@ export default function ReceptionNotesTable() {
 	const [rows, setRows] = useState<ReceptionNoteRow[]>([]);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
+	const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
 	const [sortValue, setSortValue] = useState<TableSortValue>("date-desc");
 
 	async function loadReceptionNotes() {
@@ -184,7 +185,7 @@ export default function ReceptionNotesTable() {
 	}
 
 	async function handleRemoveReceptionNote(rnid: string) {
-		setErrorMessage("");
+		clearReceptionNotesError("remove:start", { rnid });
 
 		try {
 			const response = await apiFetch(`/reception-notes/${encodeURIComponent(rnid)}`, {
@@ -198,60 +199,99 @@ export default function ReceptionNotesTable() {
 
 			setRows((current) => current.filter((row) => row.rnid !== rnid));
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to remove that reception note right now.");
+			setReceptionNotesError(error instanceof Error ? error.message : "Unable to remove that reception note right now.", "remove:error", { rnid });
 		}
 	}
 
 	async function handleViewReceptionNote(row: ReceptionNoteRow) {
-		setErrorMessage("");
+		const normalizedRnid = row.rnid.trim();
+		clearReceptionNotesError("view:start", { rnid: row.rnid, rowId: row.id });
 		const session = readAuthSession();
 
 		if (!session?.accessToken) {
-			setErrorMessage("Authentication is required to preview that reception note.");
+			setReceptionNotesError("Authentication is required to preview that reception note.", "view:no-auth", {
+				rnid: row.rnid,
+				rowId: row.id,
+			});
+			return;
+		}
+
+		if (!normalizedRnid) {
+			setReceptionNotesError("A valid reception note ID is required.", "view:invalid-rnid", {
+				rnid: row.rnid,
+				rowId: row.id,
+			});
 			return;
 		}
 
 		try {
+			setActiveActionKey(`view:${normalizedRnid}`);
 			await openPdfWithAuth({
 				pdfType: "reception-note",
-				documentId: row.id,
-				path: `/reception-notes/${row.id}/pdf/view`,
+				documentId: normalizedRnid,
+				path: `/reception-notes/${encodeURIComponent(normalizedRnid)}/pdf/view`,
 				fallbackErrorMessage: "Unable to preview that reception note right now.",
 			});
+			clearReceptionNotesError("view:success", { rnid: normalizedRnid, rowId: row.id });
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception note right now.");
+			setReceptionNotesError(error instanceof Error ? error.message : "Unable to preview that reception note right now.", "view:error", {
+				rnid: normalizedRnid,
+				rowId: row.id,
+			});
+		} finally {
+			setActiveActionKey((current) => (current === `view:${normalizedRnid}` ? null : current));
 		}
 	}
 
 	async function handleDownloadReceptionNote(row: ReceptionNoteRow) {
-		setErrorMessage("");
+		const normalizedRnid = row.rnid.trim();
+		clearReceptionNotesError("download:start", { rnid: row.rnid, rowId: row.id });
+
+		if (!normalizedRnid) {
+			setReceptionNotesError("A valid reception note ID is required.", "download:invalid-rnid", {
+				rnid: row.rnid,
+				rowId: row.id,
+			});
+			return;
+		}
 
 		try {
-			const pdfPath = `/reception-notes/${row.id}/pdf/download`;
+			const pdfPath = `/reception-notes/${encodeURIComponent(normalizedRnid)}/pdf/download`;
+			setActiveActionKey(`download:${normalizedRnid}`);
 
 			await downloadPdfWithAuth({
 				pdfType: "reception-note",
-				documentId: row.id,
+				documentId: normalizedRnid,
 				path: pdfPath,
 				fallbackErrorMessage: "Unable to download that reception note right now.",
-				fallbackFilename: row.rnid || "reception-note.pdf",
+				fallbackFilename: normalizedRnid || "reception-note.pdf",
 			});
+			clearReceptionNotesError("download:success", { rnid: normalizedRnid, rowId: row.id });
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to download that reception note right now.");
+			setReceptionNotesError(error instanceof Error ? error.message : "Unable to download that reception note right now.", "download:error", {
+				rnid: normalizedRnid,
+				rowId: row.id,
+			});
+		} finally {
+			setActiveActionKey((current) => (current === `download:${normalizedRnid}` ? null : current));
 		}
 	}
 
 	async function handleViewReceptionCertificate(receptionCertificateReference: string) {
-		setErrorMessage("");
+		clearReceptionNotesError("certificate:start", { receptionCertificateReference });
 		const session = readAuthSession();
 
 		if (!session?.accessToken) {
-			setErrorMessage("Authentication is required to preview that reception certificate.");
+			setReceptionNotesError("Authentication is required to preview that reception certificate.", "certificate:no-auth", {
+				receptionCertificateReference,
+			});
 			return;
 		}
 
 		if (!receptionCertificateReference.trim()) {
-			setErrorMessage("That reception certificate is missing its PDF reference.");
+			setReceptionNotesError("That reception certificate is missing its PDF reference.", "certificate:missing-reference", {
+				receptionCertificateReference,
+			});
 			return;
 		}
 
@@ -262,9 +302,24 @@ export default function ReceptionNotesTable() {
 				path: `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view`,
 				fallbackErrorMessage: "Unable to preview that reception certificate right now.",
 			});
+			clearReceptionNotesError("certificate:success", { receptionCertificateReference });
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.");
+			setReceptionNotesError(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.", "certificate:error", {
+				receptionCertificateReference,
+			});
 		}
+	}
+
+	function clearReceptionNotesError(reason: string, details?: Record<string, unknown>) {
+		void reason;
+		void details;
+		setErrorMessage("");
+	}
+
+	function setReceptionNotesError(message: string, reason: string, details?: Record<string, unknown>) {
+		void reason;
+		void details;
+		setErrorMessage(message);
 	}
 
 	useEffect(() => {
@@ -332,17 +387,28 @@ export default function ReceptionNotesTable() {
 								</td>
 								<td className="px-3 py-2.5">{renderReceptionCertificateCell(row.receptionCertificateReference, handleViewReceptionCertificate)}</td>
 								<td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
+									{(() => {
+										const normalizedRnid = row.rnid.trim();
+										const isRowBusy = activeActionKey === `view:${normalizedRnid}` || activeActionKey === `download:${normalizedRnid}`;
+										return (
 									<TableActions
 										onView={() => handleViewReceptionNote(row)}
 										onDownload={() => handleDownloadReceptionNote(row)}
+										viewLabel={activeActionKey === `view:${normalizedRnid}` ? "Generating PDF..." : "View"}
+										downloadLabel={activeActionKey === `download:${normalizedRnid}` ? "Generating PDF..." : "Download"}
+										viewDisabled={isLoading || isRowBusy}
+										downloadDisabled={isLoading || isRowBusy}
 										className="flex-nowrap"
 									/>
+										);
+									})()}
 								</td>
 								<td className="px-3 py-2.5 text-slate-600">
 									<button
 										type="button"
 										onClick={() => handleRemoveReceptionNote(row.rnid)}
-										className="min-h-6 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+										className="min-h-6 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+										disabled={activeActionKey === `view:${row.rnid.trim()}` || activeActionKey === `download:${row.rnid.trim()}`}
 									>
 										Remove
 									</button>

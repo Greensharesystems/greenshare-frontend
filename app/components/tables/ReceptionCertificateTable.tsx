@@ -50,6 +50,7 @@ export default function ReceptionCertificateTable({
 	const [rows, setRows] = useState<ReceptionCertificateRow[]>([]);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
+	const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
 	const [sortValue, setSortValue] = useState<TableSortValue>("date-desc");
 
 	async function loadReceptionCertificates() {
@@ -126,16 +127,16 @@ export default function ReceptionCertificateTable({
 	}
 
 	async function handleViewCircularityCertificate(circularityCertificateReference: string) {
-		setErrorMessage("");
+		clearReceptionCertificateError();
 		const session = readAuthSession();
 
 		if (!session?.accessToken) {
-			setErrorMessage("Authentication is required to preview that circularity certificate.");
+			setReceptionCertificateError("Authentication is required to preview that circularity certificate.");
 			return;
 		}
 
 		if (!circularityCertificateReference.trim()) {
-			setErrorMessage("That circularity certificate is missing its PDF reference.");
+			setReceptionCertificateError("That circularity certificate is missing its PDF reference.");
 			return;
 		}
 
@@ -146,13 +147,14 @@ export default function ReceptionCertificateTable({
 				path: `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/view`,
 				fallbackErrorMessage: "Unable to preview that circularity certificate right now.",
 			});
+			clearReceptionCertificateError();
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
+			setReceptionCertificateError(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
 		}
 	}
 
 	async function handleRemoveReceptionCertificate(rcid: string) {
-		setErrorMessage("");
+		clearReceptionCertificateError();
 
 		try {
 			const response = await apiFetch(`/reception-certificates/${encodeURIComponent(rcid)}`, {
@@ -166,48 +168,53 @@ export default function ReceptionCertificateTable({
 
 			setRows((current) => current.filter((row) => row.rcid !== rcid));
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to remove that reception certificate right now.");
+			setReceptionCertificateError(error instanceof Error ? error.message : "Unable to remove that reception certificate right now.");
 		}
 	}
 
 	async function handleViewReceptionCertificate(row: ReceptionCertificateRow) {
-		setErrorMessage("");
+		clearReceptionCertificateError();
 		const session = readAuthSession();
 		const receptionCertificateReference = getReceptionCertificatePdfReference(row);
 
 		if (!session?.accessToken) {
-			setErrorMessage("Authentication is required to preview that reception certificate.");
+			setReceptionCertificateError("Authentication is required to preview that reception certificate.");
 			return;
 		}
 
 		if (!receptionCertificateReference) {
-			setErrorMessage("That reception certificate is missing its PDF reference.");
+			setReceptionCertificateError("That reception certificate is missing its PDF reference.");
 			return;
 		}
 
 		try {
+			setActiveActionKey(`view:${receptionCertificateReference}`);
 			await openPdfWithAuth({
 				pdfType: "reception-certificate",
 				documentId: receptionCertificateReference,
 				path: `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/view`,
 				fallbackErrorMessage: "Unable to preview that reception certificate right now.",
 			});
+			clearReceptionCertificateError();
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.");
+			setReceptionCertificateError(error instanceof Error ? error.message : "Unable to preview that reception certificate right now.");
+		} finally {
+			setActiveActionKey((current) => (current === `view:${receptionCertificateReference}` ? null : current));
 		}
 	}
 
 	async function handleDownloadReceptionCertificate(row: ReceptionCertificateRow) {
-		setErrorMessage("");
+		clearReceptionCertificateError();
 		const receptionCertificateReference = getReceptionCertificatePdfReference(row);
 
 		if (!receptionCertificateReference) {
-			setErrorMessage("That reception certificate is missing its PDF reference.");
+			setReceptionCertificateError("That reception certificate is missing its PDF reference.");
 			return;
 		}
 
 		try {
 			const pdfPath = `/reception-certificates/${encodeURIComponent(receptionCertificateReference)}/pdf/download`;
+			setActiveActionKey(`download:${receptionCertificateReference}`);
 
 			await downloadPdfWithAuth({
 				pdfType: "reception-certificate",
@@ -216,9 +223,20 @@ export default function ReceptionCertificateTable({
 				fallbackErrorMessage: "Unable to download that reception certificate right now.",
 				fallbackFilename: row.rcid || "reception-certificate.pdf",
 			});
+			clearReceptionCertificateError();
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to download that reception certificate right now.");
+			setReceptionCertificateError(error instanceof Error ? error.message : "Unable to download that reception certificate right now.");
+		} finally {
+			setActiveActionKey((current) => (current === `download:${receptionCertificateReference}` ? null : current));
 		}
+	}
+
+	function clearReceptionCertificateError() {
+		setErrorMessage("");
+	}
+
+	function setReceptionCertificateError(message: string) {
+		setErrorMessage(message);
 	}
 
 	useEffect(() => {
@@ -227,6 +245,7 @@ export default function ReceptionCertificateTable({
 
 	const columns = buildReceptionCertificateColumns({
 		canRemove: permissions.canRemove,
+		activeActionKey,
 		onView: handleViewReceptionCertificate,
 		onViewCircularityCertificate: handleViewCircularityCertificate,
 		onDownload: handleDownloadReceptionCertificate,
@@ -267,12 +286,14 @@ export default function ReceptionCertificateTable({
 
 function buildReceptionCertificateColumns({
 	canRemove,
+	activeActionKey,
 	onView,
 	onViewCircularityCertificate,
 	onDownload,
 	onRemove,
 }: {
 	canRemove: boolean;
+	activeActionKey: string | null;
 	onView: (row: ReceptionCertificateRow) => void;
 	onViewCircularityCertificate: (circularityCertificateReference: string) => void;
 	onDownload: (row: ReceptionCertificateRow) => void;
@@ -324,13 +345,21 @@ function buildReceptionCertificateColumns({
 			key: "actions",
 			label: "Actions",
 			cellClassName: "whitespace-nowrap",
-			renderCell: (row) => (
-				<TableActions
-					onView={() => onView(row)}
-					onDownload={() => onDownload(row)}
-					className="flex-nowrap"
-				/>
-			),
+			renderCell: (row) => {
+				const receptionCertificateReference = getReceptionCertificatePdfReference(row);
+				const isRowBusy = activeActionKey === `view:${receptionCertificateReference}` || activeActionKey === `download:${receptionCertificateReference}`;
+				return (
+					<TableActions
+						onView={() => onView(row)}
+						onDownload={() => onDownload(row)}
+						viewLabel={activeActionKey === `view:${receptionCertificateReference}` ? "Generating PDF..." : "View"}
+						downloadLabel={activeActionKey === `download:${receptionCertificateReference}` ? "Generating PDF..." : "Download"}
+						viewDisabled={isRowBusy}
+						downloadDisabled={isRowBusy}
+						className="flex-nowrap"
+					/>
+				);
+			},
 		},
 	];
 
@@ -343,11 +372,12 @@ function buildReceptionCertificateColumns({
 		{
 			key: "remove",
 			label: "Remove",
-			renderCell: (row) => (
+				renderCell: (row) => (
 				<button
 					type="button"
 					onClick={() => onRemove(row.rcid)}
-					className="min-h-6 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+						className="min-h-6 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+						disabled={activeActionKey === `view:${row.rcid.trim()}` || activeActionKey === `download:${row.rcid.trim()}`}
 				>
 					Remove
 				</button>
