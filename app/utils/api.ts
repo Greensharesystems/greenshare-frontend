@@ -103,6 +103,7 @@ export async function openPdfWithAuth({ pdfType, documentId, path, fallbackError
 		documentId,
 		path,
 	});
+	const previewWindow = typeof window !== "undefined" ? window.open("", "_blank") : null;
 
 	try {
 		const response = await apiFetch(path, {
@@ -115,13 +116,22 @@ export async function openPdfWithAuth({ pdfType, documentId, path, fallbackError
 
 		const pdfBlob = await response.blob();
 		const previewUrl = window.URL.createObjectURL(pdfBlob);
-		window.open(previewUrl, "_blank");
+
+		if (previewWindow) {
+			previewWindow.location.href = previewUrl;
+		}
+		else {
+			window.open(previewUrl, "_blank");
+		}
 
 		window.setTimeout(() => {
 			window.URL.revokeObjectURL(previewUrl);
 		}, 60_000);
 	}
 	catch (error) {
+		if (previewWindow && !previewWindow.closed) {
+			previewWindow.close();
+		}
 		throw error;
 	}
 }

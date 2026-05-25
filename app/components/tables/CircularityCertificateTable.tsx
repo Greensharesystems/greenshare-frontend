@@ -42,6 +42,7 @@ export default function CircularityCertificateTable({
 	const [rows, setRows] = useState<CircularityCertificateRow[]>([]);
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
+	const [activeActionKey, setActiveActionKey] = useState<string | null>(null);
 	const [sortValue, setSortValue] = useState<TableSortValue>("date-desc");
 
 	async function loadCircularityCertificates() {
@@ -94,43 +95,48 @@ export default function CircularityCertificateTable({
 	}
 
 	async function handleViewCircularityCertificate(row: CircularityCertificateRow) {
-		setErrorMessage("");
+		clearCircularityCertificateError();
 		const session = readAuthSession();
 		const circularityCertificateReference = getCircularityCertificatePdfReference(row);
 
 		if (!session?.accessToken) {
-			setErrorMessage("Authentication is required to preview that circularity certificate.");
+			setCircularityCertificateError("Authentication is required to preview that circularity certificate.");
 			return;
 		}
 
 		if (!circularityCertificateReference) {
-			setErrorMessage("That circularity certificate is missing its PDF reference.");
+			setCircularityCertificateError("That circularity certificate is missing its PDF reference.");
 			return;
 		}
 
 		try {
+			setActiveActionKey(`view:${circularityCertificateReference}`);
 			await openPdfWithAuth({
 				pdfType: "circularity-certificate",
 				documentId: circularityCertificateReference,
 				path: `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/view`,
 				fallbackErrorMessage: "Unable to preview that circularity certificate right now.",
 			});
+			clearCircularityCertificateError();
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
+			setCircularityCertificateError(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
+		} finally {
+			setActiveActionKey((current) => (current === `view:${circularityCertificateReference}` ? null : current));
 		}
 	}
 
 	async function handleDownloadCircularityCertificate(row: CircularityCertificateRow) {
-		setErrorMessage("");
+		clearCircularityCertificateError();
 		const circularityCertificateReference = getCircularityCertificatePdfReference(row);
 
 		if (!circularityCertificateReference) {
-			setErrorMessage("That circularity certificate is missing its PDF reference.");
+			setCircularityCertificateError("That circularity certificate is missing its PDF reference.");
 			return;
 		}
 
 		try {
 			const pdfPath = `/circularity-certificates/${encodeURIComponent(circularityCertificateReference)}/pdf/download`;
+			setActiveActionKey(`download:${circularityCertificateReference}`);
 
 			await downloadPdfWithAuth({
 				pdfType: "circularity-certificate",
@@ -139,13 +145,16 @@ export default function CircularityCertificateTable({
 				fallbackErrorMessage: "Unable to download that circularity certificate right now.",
 				fallbackFilename: row.ccid || "circularity-certificate.pdf",
 			});
+			clearCircularityCertificateError();
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to download that circularity certificate right now.");
+			setCircularityCertificateError(error instanceof Error ? error.message : "Unable to download that circularity certificate right now.");
+		} finally {
+			setActiveActionKey((current) => (current === `download:${circularityCertificateReference}` ? null : current));
 		}
 	}
 
 	async function handleRemoveCircularityCertificate(ccid: string) {
-		setErrorMessage("");
+		clearCircularityCertificateError();
 
 		try {
 			const response = await apiFetch(`/circularity-certificates/${encodeURIComponent(ccid)}`, {
@@ -159,8 +168,16 @@ export default function CircularityCertificateTable({
 
 			setRows((current) => current.filter((row) => row.ccid !== ccid));
 		} catch (error) {
-			setErrorMessage(error instanceof Error ? error.message : "Unable to remove that circularity certificate right now.");
+			setCircularityCertificateError(error instanceof Error ? error.message : "Unable to remove that circularity certificate right now.");
 		}
+	}
+
+	function clearCircularityCertificateError() {
+		setErrorMessage("");
+	}
+
+	function setCircularityCertificateError(message: string) {
+		setErrorMessage(message);
 	}
 
 	useEffect(() => {
@@ -169,6 +186,7 @@ export default function CircularityCertificateTable({
 
 	const columns = buildCircularityCertificateColumns({
 		canRemove: permissions.canRemove,
+		activeActionKey,
 		onView: handleViewCircularityCertificate,
 		onDownload: handleDownloadCircularityCertificate,
 		onRemove: handleRemoveCircularityCertificate,
@@ -209,11 +227,13 @@ export default function CircularityCertificateTable({
 
 function buildCircularityCertificateColumns({
 	canRemove,
+	activeActionKey,
 	onView,
 	onDownload,
 	onRemove,
 }: {
 	canRemove: boolean;
+	activeActionKey: string | null;
 	onView: (row: CircularityCertificateRow) => void;
 	onDownload: (row: CircularityCertificateRow) => void;
 	onRemove: (ccid: string) => void;
@@ -259,13 +279,21 @@ function buildCircularityCertificateColumns({
 			key: "actions",
 			label: "Actions",
 			cellClassName: "whitespace-nowrap",
-			renderCell: (row) => (
-				<TableActions
-					onView={() => onView(row)}
-					onDownload={() => onDownload(row)}
-					className="flex-nowrap"
-				/>
-			),
+			renderCell: (row) => {
+				const circularityCertificateReference = getCircularityCertificatePdfReference(row);
+				const isRowBusy = activeActionKey === `view:${circularityCertificateReference}` || activeActionKey === `download:${circularityCertificateReference}`;
+				return (
+					<TableActions
+						onView={() => onView(row)}
+						onDownload={() => onDownload(row)}
+						viewLabel={activeActionKey === `view:${circularityCertificateReference}` ? "Generating PDF..." : "View"}
+						downloadLabel={activeActionKey === `download:${circularityCertificateReference}` ? "Generating PDF..." : "Download"}
+						viewDisabled={isRowBusy}
+						downloadDisabled={isRowBusy}
+						className="flex-nowrap"
+					/>
+				);
+			},
 		},
 	];
 
@@ -282,7 +310,8 @@ function buildCircularityCertificateColumns({
 				<button
 					type="button"
 					onClick={() => onRemove(row.ccid)}
-					className="min-h-6 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+						className="min-h-6 rounded-lg border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+						disabled={activeActionKey === `view:${row.ccid.trim()}` || activeActionKey === `download:${row.ccid.trim()}`}
 				>
 					Remove
 				</button>
