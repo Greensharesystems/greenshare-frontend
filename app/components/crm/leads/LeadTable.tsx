@@ -84,8 +84,6 @@ const badgeClasses = {
 	},
 } as const;
 
-const sourceOptions = ["All", "Website", "Referral", "Sales Visit", "WhatsApp", "Existing Client"];
-
 export const initialLeadRows: LeadRecord[] = [
 	{
 		date: "07-05-2026",
@@ -543,12 +541,11 @@ export default function LeadTable({ leads }: LeadTableProps) {
 								/>
 							</div>
 						</label>
-					<FilterSelect className="w-32" label="Source" value={filters.source} onChange={(value) => updateFilter("source", value)} options={sourceOptions} />
 					<FilterSelect className="w-38" label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
-					<FilterSelect className="w-32" label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
 					<FilterSelect className="w-36" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
 					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
-					<div className="ml-auto flex items-end gap-2">
+					<FilterSelect className="w-32" label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
+					<div className="flex items-end gap-2">
 						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
 							<Download className="h-3.5 w-3.5" />
 							Export
