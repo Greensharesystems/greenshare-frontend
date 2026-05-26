@@ -45,12 +45,15 @@ function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 	const assignedToName = leadData.assignedTo === "Other" ? leadData.assignedPersonName : leadData.assignedTo;
 	const customerName = leadData.customerName.trim();
 	const cid = leadData.cid.trim();
+	const source = leadData.source === "Other" ? leadData.otherSource.trim() : leadData.source;
+	const unit = leadData.unit === "Others" ? leadData.otherUnit.trim() : leadData.unit;
+	const estimatedQuantity = Number(leadData.estimatedQuantity);
 
 	return {
 		date: leadData.leadDate,
 		leadGeneratedDate: leadData.leadDate,
 		lid: leadData.leadId,
-		source: leadData.source,
+		source,
 		assignedTo: {
 			name: assignedToName,
 			initials: buildInitials(assignedToName),
@@ -60,8 +63,8 @@ function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 		wasteStream: leadData.wasteStream,
 		wasteClass: leadData.wasteClass === "Non Hazardous" ? "Non-Hazardous" : leadData.wasteClass,
 		otherWasteClass: leadData.wasteClass === "Others" ? leadData.otherWasteClass.trim() : null,
-		estimatedQuantity: 0,
-		unit: "Tons",
+		estimatedQuantity,
+		unit,
 		labId: `LAB-${sequenceText}`,
 		labStatus: "Pending",
 		labUpdatedDate: leadData.leadDate,

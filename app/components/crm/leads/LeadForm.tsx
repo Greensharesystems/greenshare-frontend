@@ -9,6 +9,7 @@ export type LeadFormData = Readonly<{
 	cid: string;
 	customerName: string;
 	source: string;
+	otherSource: string;
 	transporterName: string;
 	referralName: string;
 	assignedTo: string;
@@ -16,6 +17,9 @@ export type LeadFormData = Readonly<{
 	wasteStream: string;
 	wasteClass: "Hazardous" | "Non Hazardous" | "Others";
 	otherWasteClass: string;
+	estimatedQuantity: string;
+	unit: string;
+	otherUnit: string;
 	leadId: string;
 	leadDate: string;
 	comments: string;
@@ -30,6 +34,7 @@ type LeadFormState = {
 	cid: string;
 	customerName: string;
 	source: string;
+	otherSource: string;
 	transporterName: string;
 	referralName: string;
 	assignedTo: string;
@@ -37,6 +42,9 @@ type LeadFormState = {
 	wasteStream: string;
 	wasteClass: "Hazardous" | "Non Hazardous" | "Others" | "";
 	otherWasteClass: string;
+	estimatedQuantity: string;
+	unit: "Tons" | "Kgs" | "Liters" | "Metric Tons" | "Others" | "";
+	otherUnit: string;
 	leadId: string;
 	leadDate: string;
 	comments: string;
@@ -53,7 +61,10 @@ const SOURCE_OPTIONS = [
 	"Database",
 	"Email",
 	"Referral",
+	"Other",
 ] as const;
+
+const UNIT_OPTIONS = ["Tons", "Kgs", "Liters", "Metric Tons", "Others"] as const;
 
 const ASSIGNEE_OPTIONS = ["Makis Spyartos", "Asul Asokan", "Ashish Hamirani", "Other"] as const;
 
@@ -61,6 +72,7 @@ const INITIAL_FORM_STATE: LeadFormState = {
 	cid: "",
 	customerName: "",
 	source: "",
+	otherSource: "",
 	transporterName: "",
 	referralName: "",
 	assignedTo: "",
@@ -68,6 +80,9 @@ const INITIAL_FORM_STATE: LeadFormState = {
 	wasteStream: "",
 	wasteClass: "",
 	otherWasteClass: "",
+	estimatedQuantity: "",
+	unit: "",
+	otherUnit: "",
 	leadId: "",
 	leadDate: "",
 	comments: "",
@@ -122,17 +137,24 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 
 	const isTransporterSource = formState.source === "Transporter";
 	const isReferralSource = formState.source === "Referral";
+	const isOtherSource = formState.source === "Other";
 	const isOtherAssignee = formState.assignedTo === "Other";
 	const isOtherWasteClass = formState.wasteClass === "Others";
+	const isOtherUnit = formState.unit === "Others";
 	const hasCustomerIdentity = Boolean(formState.cid.trim() || formState.customerName.trim());
 	const hasGeneratedLead = Boolean(formState.leadId && formState.leadDate);
+	const hasEstimatedQuantity = Boolean(formState.estimatedQuantity.trim()) && Number.isFinite(Number(formState.estimatedQuantity));
 	const isFormValid =
 		hasCustomerIdentity &&
 		Boolean(formState.source) &&
+		(!isOtherSource || Boolean(formState.otherSource.trim())) &&
 		Boolean(formState.assignedTo) &&
 		Boolean(formState.wasteStream.trim()) &&
 		Boolean(formState.wasteClass) &&
 		(!isOtherWasteClass || Boolean(formState.otherWasteClass.trim())) &&
+		hasEstimatedQuantity &&
+		Boolean(formState.unit) &&
+		(!isOtherUnit || Boolean(formState.otherUnit.trim())) &&
 		hasGeneratedLead &&
 		(!isTransporterSource || Boolean(formState.transporterName.trim())) &&
 		(!isReferralSource || Boolean(formState.referralName.trim())) &&
@@ -150,6 +172,7 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 			cid: formState.cid.trim(),
 			customerName: formState.customerName.trim(),
 			source: formState.source,
+			otherSource: formState.otherSource.trim(),
 			transporterName: formState.transporterName.trim(),
 			referralName: formState.referralName.trim(),
 			assignedTo: formState.assignedTo,
@@ -157,6 +180,9 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 			wasteStream: formState.wasteStream.trim(),
 			wasteClass: formState.wasteClass as LeadFormData["wasteClass"],
 			otherWasteClass: formState.otherWasteClass.trim(),
+			estimatedQuantity: formState.estimatedQuantity.trim(),
+			unit: formState.unit,
+			otherUnit: formState.otherUnit.trim(),
 			leadId: formState.leadId,
 			leadDate: formState.leadDate,
 			comments: formState.comments.trim(),
@@ -179,8 +205,17 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 		setFormState((current) => ({
 			...current,
 			source: value,
+			otherSource: value === "Other" ? current.otherSource : "",
 			transporterName: value === "Transporter" ? current.transporterName : "",
 			referralName: value === "Referral" ? current.referralName : "",
+		}));
+	}
+
+	function handleUnitChange(value: LeadFormState["unit"]) {
+		setFormState((current) => ({
+			...current,
+			unit: value,
+			otherUnit: value === "Others" ? current.otherUnit : "",
 		}));
 	}
 
@@ -361,6 +396,19 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 							</select>
 						</label>
 
+						<div className={`overflow-hidden transition-all duration-200 ${isOtherSource ? "max-h-24 opacity-100" : "max-h-0 opacity-0"}`}>
+							<label className="flex flex-col gap-1.5">
+								<span className="text-sm font-medium text-slate-700">Other Source</span>
+								<input
+									name="otherSource"
+									value={formState.otherSource}
+									onChange={(event) => updateField("otherSource", event.target.value)}
+									placeholder="Enter other source"
+									className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+								/>
+							</label>
+						</div>
+
 						<label className="flex flex-col gap-1.5">
 							<span className="text-sm font-medium text-slate-700">Assigned To</span>
 							<select
@@ -427,6 +475,51 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 							/>
 						</label>
+
+						<label className="flex flex-col gap-1.5">
+							<span className="text-sm font-medium text-slate-700">Est. Qty</span>
+							<input
+								name="estimatedQuantity"
+								type="number"
+								min="0"
+								step="any"
+								inputMode="decimal"
+								value={formState.estimatedQuantity}
+								onChange={(event) => updateField("estimatedQuantity", event.target.value)}
+								placeholder="Enter estimated quantity"
+								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+							/>
+						</label>
+
+						<label className="flex flex-col gap-1.5">
+							<span className="text-sm font-medium text-slate-700">Unit</span>
+							<select
+								name="unit"
+								value={formState.unit}
+								onChange={(event) => handleUnitChange(event.target.value as LeadFormState["unit"])}
+								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+							>
+								<option value="">Select unit</option>
+								{UNIT_OPTIONS.map((option) => (
+									<option key={option} value={option}>
+										{option}
+									</option>
+								))}
+							</select>
+						</label>
+
+						<div className={`overflow-hidden transition-all duration-200 ${isOtherUnit ? "max-h-24 opacity-100" : "max-h-0 opacity-0"}`}>
+							<label className="flex flex-col gap-1.5">
+								<span className="text-sm font-medium text-slate-700">Other Unit</span>
+								<input
+									name="otherUnit"
+									value={formState.otherUnit}
+									onChange={(event) => updateField("otherUnit", event.target.value)}
+									placeholder="Enter other unit"
+									className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+								/>
+							</label>
+						</div>
 
 						<label className="flex flex-col gap-1.5">
 							<span className="text-sm font-medium text-slate-700">Class</span>
