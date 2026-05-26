@@ -323,47 +323,63 @@ export default function LeadTable({ leads }: LeadTableProps) {
 	}
 
 	return (
-		<div className="flex flex-col gap-6">
-			<div className="flex flex-col gap-4 border-b border-slate-200 pb-6">
-				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-					<div className="grid flex-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.3fr)_repeat(5,minmax(0,1fr))]">
-						<label className="flex flex-col gap-1.5">
+		<div className="flex flex-col gap-5">
+			<div className="overflow-x-auto pb-1">
+				<div className="flex min-w-max flex-wrap items-end gap-3 xl:flex-nowrap">
+					<label className="flex w-[18rem] shrink-0 flex-col gap-1.5">
 							<span className="text-[11px] font-semibold text-slate-500">Search</span>
-							<div className="flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 focus-within:border-[#36B44D] focus-within:ring-4 focus-within:ring-[#36B44D]/10">
-								<Search className="h-4 w-4 text-slate-400" />
+							<div className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#36B44D] focus-within:ring-4 focus-within:ring-[#36B44D]/10">
+								<Search className="h-3.5 w-3.5 text-slate-400" />
 								<input
 									type="search"
 									value={filters.search}
 									onChange={(event) => updateFilter("search", event.target.value)}
-									placeholder="Search by LID, Customer, Waste Stream..."
-									className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+									placeholder="Search by LID, Customer, Waste Stream"
+									className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
 								/>
 							</div>
 						</label>
-						<FilterSelect label="Source" value={filters.source} onChange={(value) => updateFilter("source", value)} options={sourceOptions} />
-						<FilterSelect label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
-						<FilterSelect label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
-						<FilterSelect label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
-						<FilterSelect label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
-					</div>
-					<div className="flex flex-wrap gap-3 lg:justify-end">
-						<Button variant="secondary" size="sm" className="min-h-10 rounded-2xl px-4" onClick={exportVisibleRows}>
-							<Download className="h-4 w-4" />
+					<FilterSelect className="w-38 shrink-0" label="Source" value={filters.source} onChange={(value) => updateFilter("source", value)} options={sourceOptions} />
+					<FilterSelect className="w-40 shrink-0" label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
+					<FilterSelect className="w-35 shrink-0" label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
+					<FilterSelect className="w-38 shrink-0" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
+					<FilterSelect className="w-40 shrink-0" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
+					<div className="flex shrink-0 items-end gap-2 xl:ml-auto">
+						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
+							<Download className="h-3.5 w-3.5" />
 							Export
 						</Button>
-						<Button variant="secondary" size="sm" className="min-h-10 rounded-2xl px-4" onClick={clearFilters}>
-							<X className="h-4 w-4" />
+						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={clearFilters}>
+							<X className="h-3.5 w-3.5" />
 							Clear Filters
 						</Button>
 					</div>
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50/40 shadow-sm">
+			<div className="overflow-hidden rounded-[26px] border border-slate-200 bg-white">
 				<div className="w-full overflow-x-auto">
-					<table className="min-w-375 border-separate border-spacing-0 text-left text-sm text-slate-700">
+					<table className="min-w-362.5 border-separate border-spacing-0 text-left text-[12.5px] text-slate-700">
+						<colgroup>
+							<col className="w-21" />
+							<col className="w-23" />
+							<col className="w-25.5" />
+							<col className="w-34.5" />
+							<col className="w-23" />
+							<col className="w-36.5" />
+							<col className="w-31" />
+							<col className="w-24.5" />
+							<col className="w-19.5" />
+							<col className="w-16" />
+							<col className="w-24" />
+							<col className="w-22" />
+							<col className="w-24" />
+							<col className="w-27.5" />
+							<col className="w-22" />
+							<col className="w-21" />
+						</colgroup>
 						<thead className="sticky top-0 z-10 bg-slate-50">
-							<tr className="text-[11px] font-semibold text-slate-500">
+							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
 								<HeaderCell rowSpan={2} label="Date" />
 								<HeaderCell rowSpan={2} label="LID" linked />
 								<HeaderCell rowSpan={2} label="Source" />
@@ -379,7 +395,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 								<HeaderCell rowSpan={2} label="Status" />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
-							<tr className="text-[11px] font-semibold text-slate-500">
+							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
 								<HeaderCell label="Lab ID" linked />
 								<HeaderCell label="Status" />
 								<HeaderCell label="PID" linked />
@@ -389,7 +405,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 						<tbody>
 							{paginatedLeads.length === 0 ? (
 								<tr>
-									<td colSpan={DATA_COLUMN_COUNT} className="px-6 py-12 text-center text-sm text-slate-500">
+									<td colSpan={DATA_COLUMN_COUNT} className="px-4 py-10 text-center text-sm text-slate-500">
 										No leads match the current filters.
 									</td>
 								</tr>
@@ -402,16 +418,16 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										</DataCell>
 										<DataCell>{lead.source}</DataCell>
 										<DataCell>
-											<div className="flex items-center gap-2">
-												<span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-[11px] font-semibold text-white">{lead.assignedTo.initials}</span>
-												<span>{lead.assignedTo.name}</span>
+											<div className="flex items-center gap-2 whitespace-nowrap">
+												<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-[10px] font-semibold text-white">{lead.assignedTo.initials}</span>
+												<span className="truncate">{lead.assignedTo.name}</span>
 											</div>
 										</DataCell>
 										<DataCell>
 											<RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.cid} />
 										</DataCell>
-										<DataCell>{lead.customerName}</DataCell>
-										<DataCell>{lead.wasteStream}</DataCell>
+										<DataCell className="max-w-36.5 truncate">{lead.customerName}</DataCell>
+										<DataCell className="max-w-31 truncate">{lead.wasteStream}</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.class[lead.wasteClass]}>{lead.wasteClass}</Badge>
 										</DataCell>
@@ -426,20 +442,20 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell>
 											{lead.proposalId ? <RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
 										</DataCell>
-										<DataCell>
+										<DataCell className="border-r-2 border-slate-300">
 											<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
 										</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
 										</DataCell>
 										<DataCell centered>
-											<div className="flex items-center justify-center gap-2">
+											<div className="flex items-center justify-center gap-1.5">
 												<ActionLink href={`/employee/crm/leads/${lead.lid}`} label="View">
-													<Eye className="h-4 w-4" />
+													<Eye className="h-3.5 w-3.5" />
 												</ActionLink>
 												{lead.status === "Open" ? (
 													<ActionLink href={`/employee/crm/leads/${lead.lid}`} label="Edit">
-														<Pencil className="h-4 w-4" />
+														<Pencil className="h-3.5 w-3.5" />
 													</ActionLink>
 												) : null}
 											</div>
@@ -451,7 +467,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 					</table>
 				</div>
 
-				<div className="flex flex-col gap-4 border-t border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+				<div className="flex flex-col gap-3 border-t border-slate-200 bg-white px-4 py-3 text-[12px] text-slate-500 md:flex-row md:items-center md:justify-between">
 					<p>
 						Showing {filteredLeads.length === 0 ? 0 : startIndex + 1} to {endIndex} of {filteredLeads.length} leads
 					</p>
@@ -464,7 +480,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 									setRowsPerPage(Number(event.target.value) as (typeof ROWS_PER_PAGE_OPTIONS)[number]);
 									setCurrentPage(1);
 								}}
-								className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
+								className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-[12px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
 							>
 								{ROWS_PER_PAGE_OPTIONS.map((option) => (
 									<option key={option} value={option}>
@@ -483,7 +499,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 									type="button"
 									onClick={() => setCurrentPage(pageNumber)}
 									className={joinClasses(
-										"inline-flex h-9 min-w-9 items-center justify-center rounded-xl border px-3 text-sm font-medium transition",
+										"inline-flex h-8 min-w-8 items-center justify-center rounded-lg border px-2.5 text-[12px] font-medium transition",
 										pageNumber === safePage
 											? "border-[#36B44D] bg-[#36B44D] text-white shadow-[0_10px_18px_rgba(54,180,77,0.16)]"
 											: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
@@ -508,7 +524,8 @@ function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readon
 		<th
 			rowSpan={rowSpan}
 			className={joinClasses(
-				"border-b border-r border-slate-200 bg-slate-50 px-3 py-3 align-middle text-[11px] font-semibold tracking-wide text-slate-600 last:border-r-0",
+				"border-b border-r border-slate-200 bg-slate-50 px-2.5 py-2.5 align-middle text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0",
+				label === "Status" && rowSpan === 2 ? "border-l-2 border-slate-300" : undefined,
 				centered ? "text-center" : "text-left",
 			)}
 		>
@@ -522,7 +539,7 @@ function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readon
 
 function GroupHeader({ label, colSpan }: Readonly<{ label: string; colSpan: number }>) {
 	return (
-		<th colSpan={colSpan} className="border-b border-r border-slate-200 bg-slate-50 px-3 py-3 text-center text-[11px] font-semibold tracking-wide text-slate-600 last:border-r-0">
+		<th colSpan={colSpan} className="border-b border-r border-slate-200 bg-slate-50 px-2.5 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0">
 			<div className="flex items-center justify-center gap-1.5">
 				<span>{label}</span>
 				<ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
@@ -531,17 +548,17 @@ function GroupHeader({ label, colSpan }: Readonly<{ label: string; colSpan: numb
 	);
 }
 
-function DataCell({ children, centered = false }: Readonly<{ children: React.ReactNode; centered?: boolean }>) {
-	return <td className={joinClasses("border-b border-r border-slate-200 px-3 py-4 align-middle text-sm text-slate-700 last:border-r-0", centered ? "text-center" : "text-left")}>{children}</td>;
+function DataCell({ children, centered = false, className }: Readonly<{ children: React.ReactNode; centered?: boolean; className?: string }>) {
+	return <td className={joinClasses("border-b border-r border-slate-200 px-2.5 py-2.5 align-middle text-[12.5px] text-slate-700 whitespace-nowrap last:border-r-0", centered ? "text-center" : "text-left", className)}>{children}</td>;
 }
 
 function Badge({ children, tone }: Readonly<{ children: React.ReactNode; tone: string }>) {
-	return <span className={joinClasses("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset", tone)}>{children}</span>;
+	return <span className={joinClasses("inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap ring-1 ring-inset", tone)}>{children}</span>;
 }
 
 function RecordLink({ href, value }: Readonly<{ href: string; value: string }>) {
 	return (
-		<Link href={href} className="font-semibold text-[#36B44D] transition hover:text-[#2b963f] hover:underline">
+		<Link href={href} className="font-semibold whitespace-nowrap text-[#36B44D] transition hover:text-[#2b963f] hover:underline">
 			{value}
 		</Link>
 	);
@@ -553,21 +570,21 @@ function ActionLink({ href, label, children }: Readonly<{ href: string; label: s
 			href={href}
 			aria-label={label}
 			title={label}
-			className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#36B44D]"
+			className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#36B44D]"
 		>
 			{children}
 		</Link>
 	);
 }
 
-function FilterSelect({ label, value, options, onChange }: Readonly<{ label: string; value: string; options: ReadonlyArray<string>; onChange: (value: string) => void }>) {
+function FilterSelect({ label, value, options, onChange, className }: Readonly<{ label: string; value: string; options: ReadonlyArray<string>; onChange: (value: string) => void; className?: string }>) {
 	return (
-		<label className="flex min-w-37.5 flex-col gap-1.5">
+		<label className={joinClasses("flex flex-col gap-1.5", className)}>
 			<span className="text-[11px] font-semibold text-slate-500">{label}</span>
 			<select
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
-				className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
+				className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
 			>
 				{options.map((option) => (
 					<option key={option} value={option}>
@@ -586,7 +603,7 @@ function PaginationButton({ label, disabled, onClick, children }: Readonly<{ lab
 			aria-label={label}
 			onClick={onClick}
 			disabled={disabled}
-			className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+			className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
 		>
 			{children}
 		</button>
