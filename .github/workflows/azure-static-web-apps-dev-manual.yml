@@ -1,6 +1,11 @@
 name: Azure Static Web Apps Dev Manual Deploy
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/azure-static-web-apps-dev-manual.yml
   workflow_dispatch:
     inputs:
       target_ref:
