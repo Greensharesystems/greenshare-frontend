@@ -18,6 +18,7 @@ type Assignee = Readonly<{
 
 export type LeadRecord = Readonly<{
 	date: string;
+	leadGeneratedDate: string;
 	lid: string;
 	source: string;
 	assignedTo: Assignee;
@@ -29,10 +30,15 @@ export type LeadRecord = Readonly<{
 	unit: string;
 	labId: string;
 	labStatus: LabStatus;
+	labUpdatedDate: string;
 	proposalId: string | null;
 	proposalStatus: ProposalStatus;
+	proposalUpdatedDate: string;
 	status: LeadLifecycleStatus;
+	leadStatusUpdatedDate: string;
 }>;
+
+type BaseLeadRecord = Omit<LeadRecord, "leadGeneratedDate" | "labUpdatedDate" | "proposalUpdatedDate" | "leadStatusUpdatedDate">;
 
 type LeadTableProps = Readonly<{
 	leads: LeadRecord[];
@@ -57,7 +63,12 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 const ROWS_PER_PAGE_OPTIONS = [20, 10, 5] as const;
-const DATA_COLUMN_COUNT = 16;
+const DATA_COLUMN_COUNT = 19;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const LAB_STATUS_DAY_OFFSETS = [3, 2, 4, 1, 5, 2, 6, 1, 3, 4, 7, 1, 5, 2, 4, 6, 1, 2, 3, 4] as const;
+const PROPOSAL_STATUS_DAY_OFFSETS = [8, 4, 6, 2, 7, 5, 8, 3, 6, 5, 7, 2, 6, 4, 5, 8, 2, 3, 4, 5] as const;
+const LEAD_STATUS_DAY_OFFSETS = [13, 6, 9, 3, 10, 7, 11, 4, 8, 9, 12, 3, 10, 6, 7, 11, 3, 5, 6, 7] as const;
 
 const badgeClasses = {
 	lab: {
@@ -84,7 +95,7 @@ const badgeClasses = {
 	},
 } as const;
 
-export const initialLeadRows: LeadRecord[] = [
+const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "07-05-2026",
 		lid: "LID-0001",
@@ -426,6 +437,14 @@ export const initialLeadRows: LeadRecord[] = [
 		status: "Open",
 	},
 ];
+
+export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => ({
+	...lead,
+	leadGeneratedDate: lead.date,
+	labUpdatedDate: addDaysToDisplayDate(lead.date, LAB_STATUS_DAY_OFFSETS[index] ?? 0),
+	proposalUpdatedDate: addDaysToDisplayDate(lead.date, PROPOSAL_STATUS_DAY_OFFSETS[index] ?? 0),
+	leadStatusUpdatedDate: addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0),
+}));
 export default function LeadTable({ leads }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(20);
@@ -477,6 +496,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 	function exportVisibleRows() {
 		const header = [
 			"Date",
+			"Lead Generated Date",
 			"LID",
 			"Source",
 			"Assigned To",
@@ -488,13 +508,17 @@ export default function LeadTable({ leads }: LeadTableProps) {
 			"Unit",
 			"Lab ID",
 			"Lab Status",
+			"Lab Status Days",
 			"PID",
 			"Proposal Status",
+			"Proposal Status Days",
 			"Status",
+			"Lead Status Days",
 		];
 
 		const rows = filteredLeads.map((lead) => [
 			lead.date,
+			lead.leadGeneratedDate,
 			lead.lid,
 			lead.source,
 			lead.assignedTo.name,
@@ -506,9 +530,12 @@ export default function LeadTable({ leads }: LeadTableProps) {
 			lead.unit,
 			lead.labId,
 			lead.labStatus,
+			formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.labUpdatedDate)),
 			lead.proposalId ?? "-",
 			lead.proposalStatus,
+			formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.proposalUpdatedDate)),
 			lead.status,
+			formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.leadStatusUpdatedDate)),
 		]);
 
 		const csv = [header, ...rows]
@@ -574,9 +601,12 @@ export default function LeadTable({ leads }: LeadTableProps) {
 							<col className="w-16" />
 							<col className="w-24" />
 							<col className="w-22" />
+							<col className="w-[4.5rem]" />
 							<col className="w-24" />
 							<col className="w-27.5" />
 							<col className="w-22" />
+							<col className="w-[4.5rem]" />
+							<col className="w-[4.5rem]" />
 							<col className="w-21" />
 						</colgroup>
 						<thead className="sticky top-0 z-10 bg-slate-50">
@@ -591,16 +621,20 @@ export default function LeadTable({ leads }: LeadTableProps) {
 								<HeaderCell rowSpan={2} label="Class" />
 								<HeaderCell rowSpan={2} label="Est. Qty" />
 								<HeaderCell rowSpan={2} label="Unit" />
-								<GroupHeader label="Lab Status" colSpan={2} />
-								<GroupHeader label="Proposal Status" colSpan={2} />
-								<HeaderCell rowSpan={2} label="Status" />
+								<GroupHeader label="Lab Status" colSpan={3} />
+								<GroupHeader label="Proposal Status" colSpan={3} />
+								<GroupHeader label="Lead Status" colSpan={2} />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
 								<HeaderCell label="Lab ID" linked />
 								<HeaderCell label="Status" />
+								<HeaderCell label="Days" centered />
 								<HeaderCell label="PID" linked />
 								<HeaderCell label="Status" />
+								<HeaderCell label="Days" centered />
+								<HeaderCell label="Status" />
+								<HeaderCell label="Days" centered />
 							</tr>
 						</thead>
 						<tbody>
@@ -640,15 +674,18 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell>
 											<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
 										</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.labUpdatedDate))}</DataCell>
 										<DataCell>
 											{lead.proposalId ? <RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
 										</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
 										</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.proposalUpdatedDate))}</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
 										</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.leadStatusUpdatedDate))}</DataCell>
 										<DataCell centered>
 											<div className="flex items-center justify-center gap-1.5">
 												<ActionLink href={`/employee/crm/leads/${lead.lid}`} label="View">
@@ -718,6 +755,54 @@ export default function LeadTable({ leads }: LeadTableProps) {
 			</div>
 		</div>
 	);
+}
+
+function formatDays(days: number) {
+	return `${days} Days`;
+}
+
+function calculateDaysBetween(startDate: string, endDate: string) {
+	const startValue = parseDisplayDate(startDate);
+	const endValue = parseDisplayDate(endDate);
+
+	if (!startValue || !endValue) {
+		return 0;
+	}
+
+	return Math.max(0, Math.floor((endValue.getTime() - startValue.getTime()) / DAY_IN_MS));
+}
+
+function addDaysToDisplayDate(value: string, days: number) {
+	const parsedValue = parseDisplayDate(value);
+
+	if (!parsedValue) {
+		return value;
+	}
+
+	const shiftedValue = new Date(parsedValue.getTime() + (Math.max(0, days) * DAY_IN_MS));
+
+	return formatDisplayDate(shiftedValue);
+}
+
+function parseDisplayDate(value: string) {
+	const [dayText, monthText, yearText] = value.split("-");
+	const day = Number(dayText);
+	const month = Number(monthText);
+	const year = Number(yearText);
+
+	if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+		return null;
+	}
+
+	return new Date(Date.UTC(year, month - 1, day));
+}
+
+function formatDisplayDate(value: Date) {
+	const day = String(value.getUTCDate()).padStart(2, "0");
+	const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+	const year = value.getUTCFullYear();
+
+	return `${day}-${month}-${year}`;
 }
 
 function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readonly<{ label: string; rowSpan?: number; linked?: boolean; centered?: boolean }>) {
