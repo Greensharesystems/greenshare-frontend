@@ -1,14 +1,16 @@
 "use client";
 
 import LeadForm, { type LeadFormData } from "@/components/crm/leads/LeadForm";
+import type { LeadRecord } from "@/components/crm/leads/LeadTable";
 
 type AddLeadDrawerProps = Readonly<{
 	open: boolean;
 	onClose: () => void;
 	onCreateLead: (leadData: LeadFormData) => void;
+	existingLeads: LeadRecord[];
 }>;
 
-export default function AddLeadDrawer({ open, onClose, onCreateLead }: AddLeadDrawerProps) {
+export default function AddLeadDrawer({ open, onClose, onCreateLead, existingLeads }: AddLeadDrawerProps) {
 	if (!open) {
 		return null;
 	}
@@ -21,13 +23,9 @@ export default function AddLeadDrawer({ open, onClose, onCreateLead }: AddLeadDr
 	return (
 		<div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40">
 			<button type="button" aria-label="Close add lead drawer" className="flex-1 cursor-default" onClick={onClose} />
-			<div className="flex h-full w-full max-w-2xl translate-x-0 transform flex-col border-l border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)] transition-transform duration-300 ease-out">
+			<div className="flex h-full w-full max-w-[44rem] translate-x-0 transform flex-col border-l border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)] transition-transform duration-300 ease-out">
 				<div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-					<div className="flex flex-col gap-1.5">
-						<p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#36B44D]">Business Growth</p>
-						<h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Add Lead</h2>
-						<p className="text-sm text-slate-500">Capture a new opportunity and assign the right service requirements.</p>
-					</div>
+					<h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Add Lead</h2>
 					<button
 						type="button"
 						onClick={onClose}
@@ -40,7 +38,7 @@ export default function AddLeadDrawer({ open, onClose, onCreateLead }: AddLeadDr
 					</button>
 				</div>
 
-				<LeadForm onSubmit={handleCreateLead} onCancel={onClose} />
+				<LeadForm onSubmit={handleCreateLead} onCancel={onClose} existingLeads={existingLeads} />
 			</div>
 		</div>
 	);
