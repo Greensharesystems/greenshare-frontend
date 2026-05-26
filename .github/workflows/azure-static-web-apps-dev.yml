@@ -1,9 +1,6 @@
 name: Azure Static Web Apps Dev Preview
 
 on:
-  push:
-    branches:
-      - dev
   workflow_dispatch:
 
 concurrency:

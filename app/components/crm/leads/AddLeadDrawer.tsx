@@ -23,9 +23,9 @@ export default function AddLeadDrawer({ open, onClose, onCreateLead, existingLea
 	return (
 		<div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40">
 			<button type="button" aria-label="Close add lead drawer" className="flex-1 cursor-default" onClick={onClose} />
-			<div className="flex h-full w-full max-w-[44rem] translate-x-0 transform flex-col border-l border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)] transition-transform duration-300 ease-out">
+				<div className="flex h-full w-full max-w-[44rem] translate-x-0 transform flex-col border-l border-slate-200 bg-white shadow-[0_24px_64px_rgba(15,23,42,0.18)] transition-transform duration-300 ease-out">
 				<div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-					<h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Add Lead</h2>
+						<h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Add Lead</h2>
 					<button
 						type="button"
 						onClick={onClose}

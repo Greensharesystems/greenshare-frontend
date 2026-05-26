@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, X } from "lucide-react";
+import { Download, Eye, Pencil, Search, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 
 export type LeadLifecycleStatus = "Open" | "Won" | "Lost";
 export type LabStatus = "Approved" | "Pending" | "Rejected";
 export type ProposalStatus = "Sent" | "Draft" | "Not Sent" | "Accepted" | "Under Review";
-export type WasteClass = "Hazardous" | "Recyclable" | "Non-Hazardous";
+export type WasteClass = "Hazardous" | "Recyclable" | "Non-Hazardous" | "Others";
 
 type Assignee = Readonly<{
 	name: string;
@@ -26,6 +26,7 @@ export type LeadRecord = Readonly<{
 	customerName: string;
 	wasteStream: string;
 	wasteClass: WasteClass;
+	otherWasteClass?: string | null;
 	estimatedQuantity: number;
 	unit: string;
 	labId: string;
@@ -92,6 +93,7 @@ const badgeClasses = {
 		Hazardous: "bg-rose-50 text-rose-700 ring-rose-200",
 		Recyclable: "bg-emerald-50 text-emerald-700 ring-emerald-200",
 		"Non-Hazardous": "bg-sky-50 text-sky-700 ring-sky-200",
+		Others: "bg-slate-100 text-slate-600 ring-slate-200",
 	},
 } as const;
 
@@ -105,6 +107,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Green Loop Trading",
 		wasteStream: "Solvent Foam",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 50,
 		unit: "Tons",
 		labId: "LAB-0001",
@@ -122,6 +125,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Blue Star Industries",
 		wasteStream: "Oily Sludge",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 120,
 		unit: "Drums",
 		labId: "LAB-0002",
@@ -139,6 +143,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Emirates Marine",
 		wasteStream: "Scrap Plastic",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 18,
 		unit: "Tons",
 		labId: "LAB-0003",
@@ -156,6 +161,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Gulf Chemicals",
 		wasteStream: "Chemical Residue",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 7,
 		unit: "IBCs",
 		labId: "LAB-0004",
@@ -173,6 +179,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Desert Recycling",
 		wasteStream: "Mixed Paper",
 		wasteClass: "Non-Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 32,
 		unit: "Tons",
 		labId: "LAB-0005",
@@ -190,6 +197,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Metro Polymers",
 		wasteStream: "PET Flakes",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 24,
 		unit: "Tons",
 		labId: "LAB-0006",
@@ -207,6 +215,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Arabian Logistics",
 		wasteStream: "Packaging Cardboard",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 40,
 		unit: "Bales",
 		labId: "LAB-0007",
@@ -224,6 +233,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Gulf Food Works",
 		wasteStream: "Organic Slurry",
 		wasteClass: "Non-Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 15,
 		unit: "Tanks",
 		labId: "LAB-0008",
@@ -241,6 +251,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Eco Source Manufacturing",
 		wasteStream: "Ink Residue",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 22,
 		unit: "Drums",
 		labId: "LAB-0009",
@@ -258,6 +269,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Pearl Textile Works",
 		wasteStream: "Fabric Offcuts",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 14,
 		unit: "Bales",
 		labId: "LAB-0010",
@@ -275,6 +287,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Union Steel Processing",
 		wasteStream: "Metal Dust",
 		wasteClass: "Non-Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 9,
 		unit: "Bags",
 		labId: "LAB-0011",
@@ -292,6 +305,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Nova Cleaning Services",
 		wasteStream: "Detergent Sludge",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 11,
 		unit: "IBCs",
 		labId: "LAB-0012",
@@ -309,6 +323,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Al Noor Packaging",
 		wasteStream: "Corrugated Paper",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 27,
 		unit: "Tons",
 		labId: "LAB-0013",
@@ -326,6 +341,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Marine Blue Holdings",
 		wasteStream: "Spent Coolant",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 35,
 		unit: "Drums",
 		labId: "LAB-0014",
@@ -343,6 +359,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Fresh Harvest Foods",
 		wasteStream: "Organic Residue",
 		wasteClass: "Non-Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 19,
 		unit: "Bins",
 		labId: "LAB-0015",
@@ -360,6 +377,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Orbit Glass Industries",
 		wasteStream: "Glass Cullet",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 41,
 		unit: "Tons",
 		labId: "LAB-0016",
@@ -377,6 +395,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Capital Auto Works",
 		wasteStream: "Used Filters",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 13,
 		unit: "Boxes",
 		labId: "LAB-0017",
@@ -394,6 +413,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Prime Retail Group",
 		wasteStream: "Mixed Plastics",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 29,
 		unit: "Bales",
 		labId: "LAB-0018",
@@ -411,6 +431,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Falcon Energy Services",
 		wasteStream: "Oil Contaminated Rags",
 		wasteClass: "Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 8,
 		unit: "Bags",
 		labId: "LAB-0019",
@@ -428,6 +449,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		customerName: "Sunrise Hospitality",
 		wasteStream: "Used Cooking Oil",
 		wasteClass: "Non-Hazardous",
+		otherWasteClass: null,
 		estimatedQuantity: 16,
 		unit: "Drums",
 		labId: "LAB-0020",
@@ -436,7 +458,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalStatus: "Sent",
 		status: "Open",
 	},
-];
+	];
 
 export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => ({
 	...lead,
@@ -445,6 +467,7 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 	proposalUpdatedDate: addDaysToDisplayDate(lead.date, PROPOSAL_STATUS_DAY_OFFSETS[index] ?? 0),
 	leadStatusUpdatedDate: addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0),
 }));
+
 export default function LeadTable({ leads }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(20);
@@ -525,7 +548,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 			lead.cid,
 			lead.customerName,
 			lead.wasteStream,
-			lead.wasteClass,
+			getWasteClassLabel(lead),
 			String(lead.estimatedQuantity),
 			lead.unit,
 			lead.labId,
@@ -571,7 +594,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 					<FilterSelect className="w-38" label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
 					<FilterSelect className="w-36" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
 					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
-					<FilterSelect className="w-32" label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
+					<FilterSelect className="w-32" label="Lead Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
 					<div className="flex items-end gap-2">
 						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
 							<Download className="h-3.5 w-3.5" />
@@ -664,7 +687,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell className="max-w-36.5 truncate">{lead.customerName}</DataCell>
 										<DataCell className="max-w-31 truncate">{lead.wasteStream}</DataCell>
 										<DataCell>
-											<Badge tone={badgeClasses.class[lead.wasteClass]}>{lead.wasteClass}</Badge>
+											<Badge tone={badgeClasses.class[lead.wasteClass]}>{getWasteClassLabel(lead)}</Badge>
 										</DataCell>
 										<DataCell>{lead.estimatedQuantity}</DataCell>
 										<DataCell>{lead.unit}</DataCell>
@@ -728,9 +751,6 @@ export default function LeadTable({ leads }: LeadTableProps) {
 							</select>
 						</label>
 						<div className="flex items-center gap-1">
-							<PaginationButton label="Previous page" disabled={safePage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
-								<ChevronLeft className="h-4 w-4" />
-							</PaginationButton>
 							{visiblePageNumbers.map((pageNumber) => (
 								<button
 									key={pageNumber}
@@ -746,9 +766,6 @@ export default function LeadTable({ leads }: LeadTableProps) {
 									{pageNumber}
 								</button>
 							))}
-							<PaginationButton label="Next page" disabled={safePage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}>
-								<ChevronRight className="h-4 w-4" />
-							</PaginationButton>
 						</div>
 					</div>
 				</div>
@@ -759,6 +776,10 @@ export default function LeadTable({ leads }: LeadTableProps) {
 
 function formatDays(days: number) {
 	return `${days} Days`;
+}
+
+function getWasteClassLabel(lead: LeadRecord) {
+	return lead.wasteClass === "Others" ? lead.otherWasteClass?.trim() || "Others" : lead.wasteClass;
 }
 
 function calculateDaysBetween(startDate: string, endDate: string) {
@@ -780,7 +801,7 @@ function addDaysToDisplayDate(value: string, days: number) {
 	}
 
 	const shiftedValue = new Date(parsedValue.getTime() + (Math.max(0, days) * DAY_IN_MS));
-
+ 
 	return formatDisplayDate(shiftedValue);
 }
 
@@ -876,20 +897,6 @@ function FilterSelect({ label, value, options, onChange, className }: Readonly<{
 				))}
 			</select>
 		</label>
-	);
-}
-
-function PaginationButton({ label, disabled, onClick, children }: Readonly<{ label: string; disabled: boolean; onClick: () => void; children: React.ReactNode }>) {
-	return (
-		<button
-			type="button"
-			aria-label={label}
-			onClick={onClick}
-			disabled={disabled}
-			className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-		>
-			{children}
-		</button>
 	);
 }
 

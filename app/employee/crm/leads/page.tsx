@@ -59,6 +59,7 @@ function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 		customerName,
 		wasteStream: leadData.wasteStream,
 		wasteClass: leadData.wasteClass === "Non Hazardous" ? "Non-Hazardous" : leadData.wasteClass,
+		otherWasteClass: leadData.wasteClass === "Others" ? leadData.otherWasteClass.trim() : null,
 		estimatedQuantity: 0,
 		unit: "Tons",
 		labId: `LAB-${sequenceText}`,
