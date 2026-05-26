@@ -7,20 +7,25 @@ on:
         description: Git ref to deploy to the SWA dev environment
         required: true
         default: dev
+  repository_dispatch:
+    types:
+      - deploy-dev-preview
 
 concurrency:
-  group: swa-dev-manual-${{ inputs.target_ref }}
+  group: swa-dev-manual-${{ github.event.client_payload.target_ref || inputs.target_ref || 'dev' }}
   cancel-in-progress: true
 
 jobs:
   deploy_dev_preview:
     runs-on: ubuntu-latest
     name: Deploy Dev Preview
+    env:
+      TARGET_REF: ${{ github.event.client_payload.target_ref || inputs.target_ref || 'dev' }}
     steps:
       - name: Checkout target ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.target_ref }}
+          ref: ${{ env.TARGET_REF }}
           submodules: true
           lfs: false
 
