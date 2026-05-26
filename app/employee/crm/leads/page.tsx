@@ -25,10 +25,10 @@ export default function EmployeeLeadsPage() {
 					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 						<div className="flex flex-col gap-1">
 							<h1 className="text-3xl font-light tracking-[-0.04em] text-slate-950">Leads</h1>
-							<p className="max-w-2xl text-sm text-slate-500">Track inbound opportunities and manage follow-up across the sales pipeline.</p>
+							<p className="max-w-2xl text-sm text-slate-500">Manage and track all incoming leads.</p>
 						</div>
 						<Button className="min-w-36 justify-center" onClick={() => setIsDrawerOpen(true)}>
-							+ Add Lead
+							+ New Lead
 						</Button>
 					</div>
 
@@ -44,14 +44,27 @@ export default function EmployeeLeadsPage() {
 
 function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 	const { customerName, cid } = splitCustomerAndCid(leadData.customerCid);
+	const sequenceText = String(sequence).padStart(4, "0");
 
 	return {
-		lid: `LID-TEMP-${String(sequence).padStart(4, "0")}`,
+		date: formatLeadDate(new Date()),
+		lid: `LID-${sequenceText}`,
+		source: "Website",
+		assignedTo: {
+			name: "Lab Team",
+			initials: "LT",
+		},
 		cid,
 		customerName,
-		serviceType: leadData.serviceType,
-		status: "New",
-		createdDate: formatLeadDate(new Date()),
+		wasteStream: leadData.serviceType,
+		wasteClass: inferWasteClass(leadData.serviceType),
+		estimatedQuantity: 0,
+		unit: "Tons",
+		labId: `LAB-${sequenceText}`,
+		labStatus: "Pending",
+		proposalId: null,
+		proposalStatus: "Draft",
+		status: "Open",
 	};
 }
 
@@ -71,7 +84,21 @@ function splitCustomerAndCid(customerCid: string) {
 function formatLeadDate(date: Date) {
 	return new Intl.DateTimeFormat("en-GB", {
 		day: "2-digit",
-		month: "short",
+		month: "2-digit",
 		year: "numeric",
 	}).format(date);
+}
+
+function inferWasteClass(serviceType: string): LeadRecord["wasteClass"] {
+	const value = serviceType.toLowerCase();
+
+	if (value.includes("plastic") || value.includes("paper") || value.includes("recycling")) {
+		return "Recyclable";
+	}
+
+	if (value.includes("chemical") || value.includes("sludge") || value.includes("solvent") || value.includes("waste")) {
+		return "Hazardous";
+	}
+
+	return "Non-Hazardous";
 }
