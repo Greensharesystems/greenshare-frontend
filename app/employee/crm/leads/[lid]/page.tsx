@@ -609,6 +609,7 @@ function getLeadBadgeTone(value: string) {
 function buildFallbackLead(lid: string): LeadRecord {
 	return {
 		date: "26-05-2026",
+		leadGeneratedDate: "26-05-2026",
 		lid,
 		source: "Website",
 		assignedTo: { name: "CRM Team", initials: "CT" },
@@ -620,8 +621,11 @@ function buildFallbackLead(lid: string): LeadRecord {
 		unit: "Tons",
 		labId: "",
 		labStatus: "Pending",
+		labUpdatedDate: "26-05-2026",
 		proposalId: null,
 		proposalStatus: "Draft",
+		proposalUpdatedDate: "26-05-2026",
 		status: "Open",
+		leadStatusUpdatedDate: "26-05-2026",
 	};
 }

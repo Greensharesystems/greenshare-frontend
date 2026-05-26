@@ -48,6 +48,7 @@ function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 
 	return {
 		date: leadData.leadDate,
+		leadGeneratedDate: leadData.leadDate,
 		lid: leadData.leadId,
 		source: leadData.source,
 		assignedTo: {
@@ -62,9 +63,12 @@ function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 		unit: "Tons",
 		labId: `LAB-${sequenceText}`,
 		labStatus: "Pending",
+		labUpdatedDate: leadData.leadDate,
 		proposalId: null,
 		proposalStatus: "Draft",
+		proposalUpdatedDate: leadData.leadDate,
 		status: "Open",
+		leadStatusUpdatedDate: leadData.leadDate,
 	};
 }
 
