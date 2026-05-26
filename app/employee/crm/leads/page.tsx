@@ -35,27 +35,29 @@ export default function EmployeeLeadsPage() {
 					<LeadTable leads={leads} />
 				</div>
 			</section>
-			<AddLeadDrawer open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} onCreateLead={handleCreateLead} />
+			<AddLeadDrawer open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} onCreateLead={handleCreateLead} existingLeads={leads} />
 		</>
 	);
 }
 
 function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
-	const { customerName, cid } = splitCustomerAndCid(leadData.customerCid);
 	const sequenceText = String(sequence).padStart(4, "0");
+	const assignedToName = leadData.assignedTo === "Other" ? leadData.assignedPersonName : leadData.assignedTo;
+	const customerName = leadData.customerName.trim();
+	const cid = leadData.cid.trim();
 
 	return {
-		date: formatLeadDate(new Date()),
-		lid: `LID-${sequenceText}`,
-		source: "Website",
+		date: leadData.leadDate,
+		lid: leadData.leadId,
+		source: leadData.source,
 		assignedTo: {
-			name: "Lab Team",
-			initials: "LT",
+			name: assignedToName,
+			initials: buildInitials(assignedToName),
 		},
 		cid,
 		customerName,
-		wasteStream: leadData.serviceType,
-		wasteClass: inferWasteClass(leadData.serviceType),
+		wasteStream: leadData.wasteStream,
+		wasteClass: leadData.wasteClass === "Non Hazardous" ? "Non-Hazardous" : leadData.wasteClass,
 		estimatedQuantity: 0,
 		unit: "Tons",
 		labId: `LAB-${sequenceText}`,
@@ -66,37 +68,12 @@ function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
 	};
 }
 
-function splitCustomerAndCid(customerCid: string) {
-	const [namePart, cidPart] = customerCid.split("/").map((value) => value.trim()).filter(Boolean);
-
-	if (namePart && cidPart) {
-		return { customerName: namePart, cid: cidPart };
-	}
-
-	return {
-		customerName: customerCid,
-		cid: customerCid,
-	};
-}
-
-function formatLeadDate(date: Date) {
-	return new Intl.DateTimeFormat("en-GB", {
-		day: "2-digit",
-		month: "2-digit",
-		year: "numeric",
-	}).format(date);
-}
-
-function inferWasteClass(serviceType: string): LeadRecord["wasteClass"] {
-	const value = serviceType.toLowerCase();
-
-	if (value.includes("plastic") || value.includes("paper") || value.includes("recycling")) {
-		return "Recyclable";
-	}
-
-	if (value.includes("chemical") || value.includes("sludge") || value.includes("solvent") || value.includes("waste")) {
-		return "Hazardous";
-	}
-
-	return "Non-Hazardous";
+function buildInitials(name: string) {
+	return name
+		.split(/\s+/)
+		.filter(Boolean)
+		.slice(0, 2)
+		.map((part) => part[0]?.toUpperCase() ?? "")
+		.join("")
+		|| "NA";
 }
