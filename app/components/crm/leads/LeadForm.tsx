@@ -14,7 +14,8 @@ export type LeadFormData = Readonly<{
 	assignedTo: string;
 	assignedPersonName: string;
 	wasteStream: string;
-	wasteClass: "Hazardous" | "Non Hazardous";
+	wasteClass: "Hazardous" | "Non Hazardous" | "Others";
+	otherWasteClass: string;
 	leadId: string;
 	leadDate: string;
 	comments: string;
@@ -34,7 +35,8 @@ type LeadFormState = {
 	assignedTo: string;
 	assignedPersonName: string;
 	wasteStream: string;
-	wasteClass: "Hazardous" | "Non Hazardous" | "";
+	wasteClass: "Hazardous" | "Non Hazardous" | "Others" | "";
+	otherWasteClass: string;
 	leadId: string;
 	leadDate: string;
 	comments: string;
@@ -65,6 +67,7 @@ const INITIAL_FORM_STATE: LeadFormState = {
 	assignedPersonName: "",
 	wasteStream: "",
 	wasteClass: "",
+	otherWasteClass: "",
 	leadId: "",
 	leadDate: "",
 	comments: "",
@@ -76,6 +79,7 @@ type LeadFormProps = Readonly<{
 	onCancel: () => void;
 	existingLeads: LeadRecord[];
 }>;
+
 
 export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadFormProps) {
 	const [formState, setFormState] = useState<LeadFormState>(INITIAL_FORM_STATE);
@@ -119,6 +123,7 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 	const isTransporterSource = formState.source === "Transporter";
 	const isReferralSource = formState.source === "Referral";
 	const isOtherAssignee = formState.assignedTo === "Other";
+	const isOtherWasteClass = formState.wasteClass === "Others";
 	const hasCustomerIdentity = Boolean(formState.cid.trim() || formState.customerName.trim());
 	const hasGeneratedLead = Boolean(formState.leadId && formState.leadDate);
 	const isFormValid =
@@ -127,6 +132,7 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 		Boolean(formState.assignedTo) &&
 		Boolean(formState.wasteStream.trim()) &&
 		Boolean(formState.wasteClass) &&
+		(!isOtherWasteClass || Boolean(formState.otherWasteClass.trim())) &&
 		hasGeneratedLead &&
 		(!isTransporterSource || Boolean(formState.transporterName.trim())) &&
 		(!isReferralSource || Boolean(formState.referralName.trim())) &&
@@ -150,6 +156,7 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 			assignedPersonName: formState.assignedPersonName.trim(),
 			wasteStream: formState.wasteStream.trim(),
 			wasteClass: formState.wasteClass as LeadFormData["wasteClass"],
+			otherWasteClass: formState.otherWasteClass.trim(),
 			leadId: formState.leadId,
 			leadDate: formState.leadDate,
 			comments: formState.comments.trim(),
@@ -182,6 +189,14 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 			...current,
 			assignedTo: value,
 			assignedPersonName: value === "Other" ? current.assignedPersonName : "",
+		}));
+	}
+
+	function handleWasteClassChange(value: LeadFormState["wasteClass"]) {
+		setFormState((current) => ({
+			...current,
+			wasteClass: value,
+			otherWasteClass: value === "Others" ? current.otherWasteClass : "",
 		}));
 	}
 
@@ -418,14 +433,28 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 							<select
 								name="wasteClass"
 								value={formState.wasteClass}
-								onChange={(event) => updateField("wasteClass", event.target.value as LeadFormState["wasteClass"])}
+								onChange={(event) => handleWasteClassChange(event.target.value as LeadFormState["wasteClass"])}
 								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 							>
 								<option value="">Select class</option>
 								<option value="Hazardous">Hazardous</option>
 								<option value="Non Hazardous">Non Hazardous</option>
+								<option value="Others">Others</option>
 							</select>
 						</label>
+
+						<div className={`overflow-hidden transition-all duration-200 ${isOtherWasteClass ? "max-h-24 opacity-100" : "max-h-0 opacity-0 sm:col-span-2"}`}>
+							<label className="flex flex-col gap-1.5">
+								<span className="text-sm font-medium text-slate-700">Other Class</span>
+								<input
+									name="otherWasteClass"
+									value={formState.otherWasteClass}
+									onChange={(event) => updateField("otherWasteClass", event.target.value)}
+									placeholder="Enter other class"
+									className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+								/>
+							</label>
+						</div>
 
 						<div className="flex flex-col gap-1.5 sm:col-span-2">
 							<span className="text-sm font-medium text-slate-700">Lead ID</span>

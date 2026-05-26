@@ -62,12 +62,12 @@ export default function LeadDetailsPage() {
 		<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
 			<div className="mx-auto flex w-full max-w-7xl flex-col">
 				<LeadDetailsHeader
-					lid={lid}
+					leadId={leadRecord.lid}
+					customerId={leadRecord.cid}
 					customerName={leadRecord.customerName}
-					cid={leadRecord.cid}
-					serviceType={leadRecord.wasteStream}
-					status={leadRecord.status}
-					priority="Medium"
+					wasteType={leadRecord.wasteStream}
+					wasteClass={leadRecord.wasteClass === "Others" ? leadRecord.otherWasteClass?.trim() || "Others" : leadRecord.wasteClass}
+					estimatedQuantity={`${leadRecord.estimatedQuantity} ${leadRecord.unit}`}
 				/>
 				<div className="mt-6 grid gap-6 xl:grid-cols-3">
 					<StatusPanelCard
@@ -434,7 +434,7 @@ function createInitialLabPanelState(lead: LeadRecord): LabPanelState {
 		comments: "",
 		decision: decision.value,
 		otherDecision: decision.otherValue,
-		chemistName: lead.labStatus === "Approved" ? "Assigned Chemist" : "",
+		chemistName: "",
 	};
 }
 
@@ -447,7 +447,7 @@ function createInitialProposalPanelState(lead: LeadRecord): ProposalPanelState {
 		comments: "",
 		status: status.value,
 		otherStatus: status.otherValue,
-		updatedBy: lead.proposalId ? "CRM Team" : "",
+		updatedBy: "",
 	};
 }
 
@@ -457,7 +457,7 @@ function createInitialLeadStatusPanelState(lead: LeadRecord): LeadStatusPanelSta
 		comments: "",
 		status: lead.status,
 		otherStatus: "",
-		updatedBy: "CRM Team",
+		updatedBy: "",
 	};
 }
 
@@ -617,6 +617,7 @@ function buildFallbackLead(lid: string): LeadRecord {
 		customerName: "Green Loop Trading LLC",
 		wasteStream: "Plastic Recycling",
 		wasteClass: "Recyclable",
+		otherWasteClass: null,
 		estimatedQuantity: 0,
 		unit: "Tons",
 		labId: "",
