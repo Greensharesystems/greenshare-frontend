@@ -21,7 +21,7 @@ export default function EmployeeLeadsPage() {
 	return (
 		<>
 			<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
-				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+				<div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
 					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 						<div className="flex flex-col gap-1">
 							<h1 className="text-3xl font-light tracking-[-0.04em] text-slate-950">Leads</h1>
@@ -32,9 +32,7 @@ export default function EmployeeLeadsPage() {
 						</Button>
 					</div>
 
-					<div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-						<LeadTable leads={leads} />
-					</div>
+					<LeadTable leads={leads} />
 				</div>
 			</section>
 			<AddLeadDrawer open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} onCreateLead={handleCreateLead} />
