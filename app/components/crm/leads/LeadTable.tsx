@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Eye, Pencil, Search, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 
@@ -56,7 +56,7 @@ const DEFAULT_FILTERS: FilterState = {
 	proposalStatus: "All",
 };
 
-const ROWS_PER_PAGE_OPTIONS = [5, 10, 20] as const;
+const ROWS_PER_PAGE_OPTIONS = [20, 10, 5] as const;
 const DATA_COLUMN_COUNT = 16;
 
 const badgeClasses = {
@@ -223,10 +223,214 @@ export const initialLeadRows: LeadRecord[] = [
 		proposalStatus: "Draft",
 		status: "Lost",
 	},
+	{
+		date: "15-05-2026",
+		lid: "LID-0009",
+		source: "Website",
+		assignedTo: { initials: "AK", name: "Ahmed Khan" },
+		cid: "CID-0009",
+		customerName: "Eco Source Manufacturing",
+		wasteStream: "Ink Residue",
+		wasteClass: "Hazardous",
+		estimatedQuantity: 22,
+		unit: "Drums",
+		labId: "LAB-0009",
+		labStatus: "Pending",
+		proposalId: "PID-0006",
+		proposalStatus: "Under Review",
+		status: "Open",
+	},
+	{
+		date: "16-05-2026",
+		lid: "LID-0010",
+		source: "Referral",
+		assignedTo: { initials: "SA", name: "Sara Ali" },
+		cid: "CID-0010",
+		customerName: "Pearl Textile Works",
+		wasteStream: "Fabric Offcuts",
+		wasteClass: "Recyclable",
+		estimatedQuantity: 14,
+		unit: "Bales",
+		labId: "LAB-0010",
+		labStatus: "Approved",
+		proposalId: "PID-0007",
+		proposalStatus: "Sent",
+		status: "Open",
+	},
+	{
+		date: "17-05-2026",
+		lid: "LID-0011",
+		source: "Sales Visit",
+		assignedTo: { initials: "IG", name: "Imran Gill" },
+		cid: "CID-0011",
+		customerName: "Union Steel Processing",
+		wasteStream: "Metal Dust",
+		wasteClass: "Non-Hazardous",
+		estimatedQuantity: 9,
+		unit: "Bags",
+		labId: "LAB-0011",
+		labStatus: "Approved",
+		proposalId: "PID-0008",
+		proposalStatus: "Accepted",
+		status: "Won",
+	},
+	{
+		date: "18-05-2026",
+		lid: "LID-0012",
+		source: "WhatsApp",
+		assignedTo: { initials: "LT", name: "Lab Team" },
+		cid: "CID-0012",
+		customerName: "Nova Cleaning Services",
+		wasteStream: "Detergent Sludge",
+		wasteClass: "Hazardous",
+		estimatedQuantity: 11,
+		unit: "IBCs",
+		labId: "LAB-0012",
+		labStatus: "Rejected",
+		proposalId: null,
+		proposalStatus: "Not Sent",
+		status: "Lost",
+	},
+	{
+		date: "19-05-2026",
+		lid: "LID-0013",
+		source: "Existing Client",
+		assignedTo: { initials: "FT", name: "Finance Team" },
+		cid: "CID-0013",
+		customerName: "Al Noor Packaging",
+		wasteStream: "Corrugated Paper",
+		wasteClass: "Recyclable",
+		estimatedQuantity: 27,
+		unit: "Tons",
+		labId: "LAB-0013",
+		labStatus: "Approved",
+		proposalId: "PID-0009",
+		proposalStatus: "Under Review",
+		status: "Open",
+	},
+	{
+		date: "20-05-2026",
+		lid: "LID-0014",
+		source: "Website",
+		assignedTo: { initials: "OM", name: "Omar Malik" },
+		cid: "CID-0014",
+		customerName: "Marine Blue Holdings",
+		wasteStream: "Spent Coolant",
+		wasteClass: "Hazardous",
+		estimatedQuantity: 35,
+		unit: "Drums",
+		labId: "LAB-0014",
+		labStatus: "Pending",
+		proposalId: "PID-0010",
+		proposalStatus: "Draft",
+		status: "Open",
+	},
+	{
+		date: "21-05-2026",
+		lid: "LID-0015",
+		source: "Referral",
+		assignedTo: { initials: "NK", name: "Noor Khan" },
+		cid: "CID-0015",
+		customerName: "Fresh Harvest Foods",
+		wasteStream: "Organic Residue",
+		wasteClass: "Non-Hazardous",
+		estimatedQuantity: 19,
+		unit: "Bins",
+		labId: "LAB-0015",
+		labStatus: "Approved",
+		proposalId: "PID-0011",
+		proposalStatus: "Sent",
+		status: "Open",
+	},
+	{
+		date: "22-05-2026",
+		lid: "LID-0016",
+		source: "Sales Visit",
+		assignedTo: { initials: "RA", name: "Rashid Ahmed" },
+		cid: "CID-0016",
+		customerName: "Orbit Glass Industries",
+		wasteStream: "Glass Cullet",
+		wasteClass: "Recyclable",
+		estimatedQuantity: 41,
+		unit: "Tons",
+		labId: "LAB-0016",
+		labStatus: "Approved",
+		proposalId: "PID-0012",
+		proposalStatus: "Accepted",
+		status: "Won",
+	},
+	{
+		date: "23-05-2026",
+		lid: "LID-0017",
+		source: "Website",
+		assignedTo: { initials: "AK", name: "Ahmed Khan" },
+		cid: "CID-0017",
+		customerName: "Capital Auto Works",
+		wasteStream: "Used Filters",
+		wasteClass: "Hazardous",
+		estimatedQuantity: 13,
+		unit: "Boxes",
+		labId: "LAB-0017",
+		labStatus: "Rejected",
+		proposalId: null,
+		proposalStatus: "Not Sent",
+		status: "Lost",
+	},
+	{
+		date: "24-05-2026",
+		lid: "LID-0018",
+		source: "Existing Client",
+		assignedTo: { initials: "SA", name: "Sara Ali" },
+		cid: "CID-0018",
+		customerName: "Prime Retail Group",
+		wasteStream: "Mixed Plastics",
+		wasteClass: "Recyclable",
+		estimatedQuantity: 29,
+		unit: "Bales",
+		labId: "LAB-0018",
+		labStatus: "Pending",
+		proposalId: "PID-0013",
+		proposalStatus: "Draft",
+		status: "Open",
+	},
+	{
+		date: "25-05-2026",
+		lid: "LID-0019",
+		source: "WhatsApp",
+		assignedTo: { initials: "OM", name: "Omar Malik" },
+		cid: "CID-0019",
+		customerName: "Falcon Energy Services",
+		wasteStream: "Oil Contaminated Rags",
+		wasteClass: "Hazardous",
+		estimatedQuantity: 8,
+		unit: "Bags",
+		labId: "LAB-0019",
+		labStatus: "Pending",
+		proposalId: "PID-0014",
+		proposalStatus: "Under Review",
+		status: "Open",
+	},
+	{
+		date: "26-05-2026",
+		lid: "LID-0020",
+		source: "Referral",
+		assignedTo: { initials: "RA", name: "Rashid Ahmed" },
+		cid: "CID-0020",
+		customerName: "Sunrise Hospitality",
+		wasteStream: "Used Cooking Oil",
+		wasteClass: "Non-Hazardous",
+		estimatedQuantity: 16,
+		unit: "Drums",
+		labId: "LAB-0020",
+		labStatus: "Approved",
+		proposalId: "PID-0015",
+		proposalStatus: "Sent",
+		status: "Open",
+	},
 ];
 export default function LeadTable({ leads }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
-	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(10);
+	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(20);
 	const [currentPage, setCurrentPage] = useState(1);
 
 	const assignedToOptions = useMemo(() => {
@@ -325,8 +529,8 @@ export default function LeadTable({ leads }: LeadTableProps) {
 	return (
 		<div className="flex flex-col gap-5">
 			<div className="overflow-x-auto pb-1">
-				<div className="flex min-w-max flex-wrap items-end gap-3 xl:flex-nowrap">
-					<label className="flex w-[18rem] shrink-0 flex-col gap-1.5">
+				<div className="flex min-w-362.5 flex-wrap items-end gap-3">
+					<label className="flex w-64 flex-col gap-1.5">
 							<span className="text-[11px] font-semibold text-slate-500">Search</span>
 							<div className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#36B44D] focus-within:ring-4 focus-within:ring-[#36B44D]/10">
 								<Search className="h-3.5 w-3.5 text-slate-400" />
@@ -339,12 +543,12 @@ export default function LeadTable({ leads }: LeadTableProps) {
 								/>
 							</div>
 						</label>
-					<FilterSelect className="w-38 shrink-0" label="Source" value={filters.source} onChange={(value) => updateFilter("source", value)} options={sourceOptions} />
-					<FilterSelect className="w-40 shrink-0" label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
-					<FilterSelect className="w-35 shrink-0" label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
-					<FilterSelect className="w-38 shrink-0" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
-					<FilterSelect className="w-40 shrink-0" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
-					<div className="flex shrink-0 items-end gap-2 xl:ml-auto">
+					<FilterSelect className="w-32" label="Source" value={filters.source} onChange={(value) => updateFilter("source", value)} options={sourceOptions} />
+					<FilterSelect className="w-38" label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
+					<FilterSelect className="w-32" label="Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
+					<FilterSelect className="w-36" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
+					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
+					<div className="ml-auto flex items-end gap-2">
 						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
 							<Download className="h-3.5 w-3.5" />
 							Export
@@ -357,9 +561,9 @@ export default function LeadTable({ leads }: LeadTableProps) {
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-[26px] border border-slate-200 bg-white">
+			<div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
 				<div className="w-full overflow-x-auto">
-					<table className="min-w-362.5 border-separate border-spacing-0 text-left text-[12.5px] text-slate-700">
+					<table className="min-w-362.5 border-collapse text-left text-[12px] text-slate-700">
 						<colgroup>
 							<col className="w-21" />
 							<col className="w-23" />
@@ -442,7 +646,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell>
 											{lead.proposalId ? <RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
 										</DataCell>
-										<DataCell className="border-r-2 border-slate-300">
+										<DataCell>
 											<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
 										</DataCell>
 										<DataCell>
@@ -524,14 +728,12 @@ function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readon
 		<th
 			rowSpan={rowSpan}
 			className={joinClasses(
-				"border-b border-r border-slate-200 bg-slate-50 px-2.5 py-2.5 align-middle text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0",
-				label === "Status" && rowSpan === 2 ? "border-l-2 border-slate-300" : undefined,
+				"border-b border-r border-slate-200 bg-slate-50 px-2 py-2 align-middle text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0",
 				centered ? "text-center" : "text-left",
 			)}
 		>
-			<div className={joinClasses("flex items-center gap-1.5", centered ? "justify-center" : "justify-start", linked ? "text-slate-700" : undefined)}>
+			<div className={joinClasses("flex items-center", centered ? "justify-center" : "justify-start", linked ? "text-slate-700" : undefined)}>
 				<span>{label}</span>
-				<ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
 			</div>
 		</th>
 	);
@@ -539,26 +741,25 @@ function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readon
 
 function GroupHeader({ label, colSpan }: Readonly<{ label: string; colSpan: number }>) {
 	return (
-		<th colSpan={colSpan} className="border-b border-r border-slate-200 bg-slate-50 px-2.5 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0">
-			<div className="flex items-center justify-center gap-1.5">
+		<th colSpan={colSpan} className="border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0">
+			<div className="flex items-center justify-center">
 				<span>{label}</span>
-				<ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
 			</div>
 		</th>
 	);
 }
 
 function DataCell({ children, centered = false, className }: Readonly<{ children: React.ReactNode; centered?: boolean; className?: string }>) {
-	return <td className={joinClasses("border-b border-r border-slate-200 px-2.5 py-2.5 align-middle text-[12.5px] text-slate-700 whitespace-nowrap last:border-r-0", centered ? "text-center" : "text-left", className)}>{children}</td>;
+	return <td className={joinClasses("border-b border-r border-slate-200 px-2 py-2 align-middle text-[12px] whitespace-nowrap text-slate-700 last:border-r-0", centered ? "text-center" : "text-left", className)}>{children}</td>;
 }
 
 function Badge({ children, tone }: Readonly<{ children: React.ReactNode; tone: string }>) {
-	return <span className={joinClasses("inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold whitespace-nowrap ring-1 ring-inset", tone)}>{children}</span>;
+	return <span className={joinClasses("inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap ring-1 ring-inset", tone)}>{children}</span>;
 }
 
 function RecordLink({ href, value }: Readonly<{ href: string; value: string }>) {
 	return (
-		<Link href={href} className="font-semibold whitespace-nowrap text-[#36B44D] transition hover:text-[#2b963f] hover:underline">
+		<Link href={href} className="font-medium whitespace-nowrap text-[#36B44D] transition hover:text-[#2b963f] hover:underline">
 			{value}
 		</Link>
 	);
@@ -570,7 +771,7 @@ function ActionLink({ href, label, children }: Readonly<{ href: string; label: s
 			href={href}
 			aria-label={label}
 			title={label}
-			className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#36B44D]"
+			className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-[#36B44D]"
 		>
 			{children}
 		</Link>
