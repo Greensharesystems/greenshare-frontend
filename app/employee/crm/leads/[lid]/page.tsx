@@ -1,11 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 import Button from "@/app/components/ui/Button";
+import useAuth from "@/app/hooks/useAuth";
+import {
+	getLabStatus,
+	getLeadById,
+	getLeadStatus,
+	getProposalStatus,
+	updateLabStatus,
+	updateLeadStatus,
+	updateProposalStatus,
+	type CrmLabStatusRecord,
+	type CrmLeadStatusRecord,
+	type CrmProposalStatusRecord,
+} from "@/app/services/crm-leads.service";
 import LeadDetailsHeader from "@/components/crm/leads/LeadDetailsHeader";
-import { initialLeadRows, type LeadRecord } from "@/components/crm/leads/LeadTable";
+import { type LeadRecord } from "@/components/crm/leads/LeadTable";
 
 type LabDecision = "Accept" | "Reject" | "Not Applicable" | "Other";
 type ProposalPanelStatus = "Sent" | "Under Review" | "Not Sent" | "Other";
@@ -38,25 +51,222 @@ type LeadStatusPanelState = {
 };
 
 export default function LeadDetailsPage() {
+	const { session } = useAuth();
 	const params = useParams<{ lid: string }>();
-	const lid = Array.isArray(params.lid) ? params.lid[0] : params.lid;
-
-	const leadRecord = useMemo(() => {
-		return initialLeadRows.find((lead) => lead.lid === lid) ?? buildFallbackLead(lid);
-	}, [lid]);
-
-	const [labDraft, setLabDraft] = useState<LabPanelState>(() => createInitialLabPanelState(leadRecord));
-	const [savedLab, setSavedLab] = useState<LabPanelState>(() => createInitialLabPanelState(leadRecord));
-	const [proposalDraft, setProposalDraft] = useState<ProposalPanelState>(() => createInitialProposalPanelState(leadRecord));
-	const [savedProposal, setSavedProposal] = useState<ProposalPanelState>(() => createInitialProposalPanelState(leadRecord));
-	const [leadDraft, setLeadDraft] = useState<LeadStatusPanelState>(() => createInitialLeadStatusPanelState(leadRecord));
-	const [savedLead, setSavedLead] = useState<LeadStatusPanelState>(() => createInitialLeadStatusPanelState(leadRecord));
+	const lid = Array.isArray(params.lid) ? (params.lid[0] ?? "") : (params.lid ?? "");
+	const defaultDisplayName = session?.displayName ?? "";
+	const [leadRecord, setLeadRecord] = useState<LeadRecord | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [pageError, setPageError] = useState<string | null>(null);
+	const [labDraft, setLabDraft] = useState<LabPanelState>(() => createEmptyLabPanelState(lid, defaultDisplayName));
+	const [savedLab, setSavedLab] = useState<LabPanelState>(() => createEmptyLabPanelState(lid, defaultDisplayName));
+	const [proposalDraft, setProposalDraft] = useState<ProposalPanelState>(() => createEmptyProposalPanelState(lid, defaultDisplayName));
+	const [savedProposal, setSavedProposal] = useState<ProposalPanelState>(() => createEmptyProposalPanelState(lid, defaultDisplayName));
+	const [leadDraft, setLeadDraft] = useState<LeadStatusPanelState>(() => createEmptyLeadStatusPanelState(lid, defaultDisplayName));
+	const [savedLead, setSavedLead] = useState<LeadStatusPanelState>(() => createEmptyLeadStatusPanelState(lid, defaultDisplayName));
 	const [labErrors, setLabErrors] = useState<Partial<Record<keyof LabPanelState, string>>>({});
 	const [proposalErrors, setProposalErrors] = useState<Partial<Record<keyof ProposalPanelState, string>>>({});
 	const [leadErrors, setLeadErrors] = useState<Partial<Record<keyof LeadStatusPanelState, string>>>({});
+	const [labSubmitError, setLabSubmitError] = useState<string | null>(null);
+	const [proposalSubmitError, setProposalSubmitError] = useState<string | null>(null);
+	const [leadSubmitError, setLeadSubmitError] = useState<string | null>(null);
+	const [isSavingLab, setIsSavingLab] = useState(false);
+	const [isSavingProposal, setIsSavingProposal] = useState(false);
+	const [isSavingLead, setIsSavingLead] = useState(false);
 	const [showLabPreview, setShowLabPreview] = useState(false);
 	const [showProposalPreview, setShowProposalPreview] = useState(false);
 	const [showLeadPreview, setShowLeadPreview] = useState(false);
+
+	const handleLabSubmit = useCallback(async () => {
+		if (!leadRecord) {
+			return;
+		}
+
+		const errors = validateLabPanel(labDraft);
+		setLabErrors(errors);
+		setLabSubmitError(null);
+		if (Object.keys(errors).length > 0) {
+			return;
+		}
+
+		const payload = {
+			labId: labDraft.labId,
+			decision: labDraft.decision,
+			otherDecision: labDraft.otherDecision,
+			comments: labDraft.comments,
+			chemistName: labDraft.chemistName,
+		};
+		console.log("Submitting Lab Status", payload);
+
+		setIsSavingLab(true);
+
+		try {
+			await updateLabStatus(leadRecord.lid, payload);
+			const refreshedLabStatus = await getLabStatus(leadRecord.lid);
+			const savedState = createInitialLabPanelState(leadRecord, refreshedLabStatus, defaultDisplayName);
+			setLabDraft(savedState);
+			setSavedLab(savedState);
+			setShowLabPreview(true);
+			console.log("Lab Status saved");
+		}
+		catch (error) {
+			setLabSubmitError(resolveErrorMessage(error, "Unable to save the lab status right now."));
+		}
+		finally {
+			setIsSavingLab(false);
+		}
+	}, [defaultDisplayName, labDraft, leadRecord]);
+
+	const handleProposalSubmit = useCallback(async () => {
+		if (!leadRecord) {
+			return;
+		}
+
+		const errors = validateProposalPanel(proposalDraft);
+		setProposalErrors(errors);
+		setProposalSubmitError(null);
+		if (Object.keys(errors).length > 0) {
+			return;
+		}
+
+		const payload = {
+			pid: proposalDraft.pid,
+			status: proposalDraft.status,
+			otherStatus: proposalDraft.otherStatus,
+			comments: proposalDraft.comments,
+			updatedBy: proposalDraft.updatedBy,
+		};
+		console.log("Submitting Proposal Status", payload);
+
+		setIsSavingProposal(true);
+
+		try {
+			await updateProposalStatus(leadRecord.lid, payload);
+			const refreshedProposalStatus = await getProposalStatus(leadRecord.lid);
+			const savedState = createInitialProposalPanelState(leadRecord, refreshedProposalStatus, defaultDisplayName);
+			setProposalDraft(savedState);
+			setSavedProposal(savedState);
+			setShowProposalPreview(true);
+			console.log("Proposal Status saved");
+		}
+		catch (error) {
+			setProposalSubmitError(resolveErrorMessage(error, "Unable to save the proposal status right now."));
+		}
+		finally {
+			setIsSavingProposal(false);
+		}
+	}, [defaultDisplayName, leadRecord, proposalDraft]);
+
+	const handleLeadStatusSubmit = useCallback(async () => {
+		if (!leadRecord) {
+			return;
+		}
+
+		const errors = validateLeadStatusPanel(leadDraft);
+		setLeadErrors(errors);
+		setLeadSubmitError(null);
+		if (Object.keys(errors).length > 0) {
+			return;
+		}
+
+		const payload = {
+			status: leadDraft.status,
+			otherStatus: leadDraft.otherStatus,
+			comments: leadDraft.comments,
+			updatedBy: leadDraft.updatedBy,
+		};
+		console.log("Submitting Lead Status", payload);
+
+		setIsSavingLead(true);
+
+		try {
+			await updateLeadStatus(leadRecord.lid, payload);
+			const refreshedLeadStatus = await getLeadStatus(leadRecord.lid);
+			const savedState = createInitialLeadStatusPanelState(leadRecord, refreshedLeadStatus, defaultDisplayName);
+			setLeadDraft(savedState);
+			setSavedLead(savedState);
+			setShowLeadPreview(true);
+			console.log("Lead Status saved");
+		}
+		catch (error) {
+			setLeadSubmitError(resolveErrorMessage(error, "Unable to save the lead status right now."));
+		}
+		finally {
+			setIsSavingLead(false);
+		}
+	}, [defaultDisplayName, leadDraft, leadRecord]);
+
+	const loadLeadDetails = useCallback(async () => {
+		setIsLoading(true);
+		setPageError(null);
+
+		try {
+			const [lead, labStatusRecord, proposalStatusRecord, leadStatusRecord] = await Promise.all([
+				getLeadById(lid),
+				getLabStatus(lid),
+				getProposalStatus(lid),
+				getLeadStatus(lid),
+			]);
+
+			setLeadRecord(lead);
+
+			const nextLabState = createInitialLabPanelState(lead, labStatusRecord, defaultDisplayName);
+			const nextProposalState = createInitialProposalPanelState(lead, proposalStatusRecord, defaultDisplayName);
+			const nextLeadState = createInitialLeadStatusPanelState(lead, leadStatusRecord, defaultDisplayName);
+
+			setLabDraft(nextLabState);
+			setSavedLab(nextLabState);
+			setProposalDraft(nextProposalState);
+			setSavedProposal(nextProposalState);
+			setLeadDraft(nextLeadState);
+			setSavedLead(nextLeadState);
+			setLabErrors({});
+			setProposalErrors({});
+			setLeadErrors({});
+			setLabSubmitError(null);
+			setProposalSubmitError(null);
+			setLeadSubmitError(null);
+		} catch (error) {
+			setPageError(resolveErrorMessage(error, "Unable to load that lead right now."));
+		} finally {
+			setIsLoading(false);
+		}
+	}, [defaultDisplayName, lid]);
+
+	useEffect(() => {
+		if (!lid) {
+			setPageError("That lead could not be found.");
+			setIsLoading(false);
+			return;
+		}
+
+		void loadLeadDetails();
+	}, [lid, loadLeadDetails]);
+
+	if (isLoading) {
+		return (
+			<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
+				<div className="mx-auto flex w-full max-w-7xl flex-col rounded-[28px] border border-slate-200 bg-white px-6 py-10 text-sm text-slate-500 shadow-sm">
+					Loading lead details...
+				</div>
+			</section>
+		);
+	}
+
+	if (!leadRecord || pageError) {
+		return (
+			<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
+				<div className="mx-auto flex w-full max-w-7xl flex-col gap-4 rounded-[28px] border border-rose-200 bg-rose-50 px-6 py-6 text-sm text-rose-700 shadow-sm">
+					<p>{pageError ?? "That lead could not be found."}</p>
+					<div>
+						<Button variant="secondary" onClick={() => void loadLeadDetails()}>
+							Retry
+						</Button>
+					</div>
+				</div>
+			</section>
+		);
+	}
 
 	return (
 		<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
@@ -124,21 +334,11 @@ export default function LeadDetailsPage() {
 							<Button variant="secondary" onClick={() => setShowLabPreview((current) => !current)}>
 								View
 							</Button>
-							<Button
-								onClick={() => {
-									const errors = validateLabPanel(labDraft);
-									setLabErrors(errors);
-									if (Object.keys(errors).length > 0) {
-										return;
-									}
-
-									setSavedLab(labDraft);
-									setShowLabPreview(true);
-								}}
-							>
-								Submit
+							<Button disabled={isSavingLab} onClick={() => void handleLabSubmit()}>
+								{isSavingLab ? "Saving..." : "Submit"}
 							</Button>
 						</div>
+						{labSubmitError ? <p className="mt-4 text-sm text-rose-600">{labSubmitError}</p> : null}
 						{showLabPreview ? <PanelPreview title="Current Lab Status" rows={buildLabPreviewRows(savedLab)} /> : null}
 					</StatusPanelCard>
 
@@ -196,21 +396,11 @@ export default function LeadDetailsPage() {
 							<Button variant="secondary" onClick={() => setShowProposalPreview((current) => !current)}>
 								View
 							</Button>
-							<Button
-								onClick={() => {
-									const errors = validateProposalPanel(proposalDraft);
-									setProposalErrors(errors);
-									if (Object.keys(errors).length > 0) {
-										return;
-									}
-
-									setSavedProposal(proposalDraft);
-									setShowProposalPreview(true);
-								}}
-							>
-								Submit
+							<Button disabled={isSavingProposal} onClick={() => void handleProposalSubmit()}>
+								{isSavingProposal ? "Saving..." : "Submit"}
 							</Button>
 						</div>
+						{proposalSubmitError ? <p className="mt-4 text-sm text-rose-600">{proposalSubmitError}</p> : null}
 						{showProposalPreview ? <PanelPreview title="Current Proposal Status" rows={buildProposalPreviewRows(savedProposal)} /> : null}
 					</StatusPanelCard>
 
@@ -261,21 +451,11 @@ export default function LeadDetailsPage() {
 							<Button variant="secondary" onClick={() => setShowLeadPreview((current) => !current)}>
 								View
 							</Button>
-							<Button
-								onClick={() => {
-									const errors = validateLeadStatusPanel(leadDraft);
-									setLeadErrors(errors);
-									if (Object.keys(errors).length > 0) {
-										return;
-									}
-
-									setSavedLead(leadDraft);
-									setShowLeadPreview(true);
-								}}
-							>
-								Submit
+							<Button disabled={isSavingLead} onClick={() => void handleLeadStatusSubmit()}>
+								{isSavingLead ? "Saving..." : "Submit"}
 							</Button>
 						</div>
+						{leadSubmitError ? <p className="mt-4 text-sm text-rose-600">{leadSubmitError}</p> : null}
 						{showLeadPreview ? <PanelPreview title="Current Lead Status" rows={buildLeadStatusPreviewRows(savedLead)} /> : null}
 					</StatusPanelCard>
 				</div>
@@ -425,20 +605,64 @@ function StatusBadge({ tone, children }: Readonly<{ tone: string; children: Reac
 	return <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${tone}`}>{children}</span>;
 }
 
-function createInitialLabPanelState(lead: LeadRecord): LabPanelState {
+function createEmptyLabPanelState(lid: string, chemistName: string): LabPanelState {
+	return {
+		lid,
+		labId: "",
+		comments: "",
+		decision: "Not Applicable",
+		otherDecision: "",
+		chemistName,
+	};
+}
+
+function createInitialLabPanelState(lead: LeadRecord, status: CrmLabStatusRecord | null, chemistName: string): LabPanelState {
+	if (status) {
+		return {
+			lid: status.lid,
+			labId: status.labId,
+			comments: status.comments,
+			decision: isLabDecision(status.decision) ? status.decision : "Other",
+			otherDecision: status.otherDecision,
+			chemistName: status.chemistName || chemistName,
+		};
+	}
+
 	const decision = mapLabStatusToDecision(lead.labStatus);
 
 	return {
 		lid: lead.lid,
-		labId: lead.labId,
+		labId: lead.labId || "",
 		comments: "",
 		decision: decision.value,
 		otherDecision: decision.otherValue,
-		chemistName: "",
+		chemistName,
 	};
 }
 
-function createInitialProposalPanelState(lead: LeadRecord): ProposalPanelState {
+function createEmptyProposalPanelState(lid: string, updatedBy: string): ProposalPanelState {
+	return {
+		lid,
+		pid: "",
+		comments: "",
+		status: "",
+		otherStatus: "",
+		updatedBy,
+	};
+}
+
+function createInitialProposalPanelState(lead: LeadRecord, proposalStatus: CrmProposalStatusRecord | null, updatedBy: string): ProposalPanelState {
+	if (proposalStatus) {
+		return {
+			lid: proposalStatus.lid,
+			pid: proposalStatus.pid,
+			comments: proposalStatus.comments,
+			status: isProposalPanelStatus(proposalStatus.status) ? proposalStatus.status : "Other",
+			otherStatus: proposalStatus.otherStatus,
+			updatedBy: proposalStatus.updatedBy || updatedBy,
+		};
+	}
+
 	const status = mapProposalStatusToPanelStatus(lead.proposalStatus);
 
 	return {
@@ -447,17 +671,37 @@ function createInitialProposalPanelState(lead: LeadRecord): ProposalPanelState {
 		comments: "",
 		status: status.value,
 		otherStatus: status.otherValue,
-		updatedBy: "",
+		updatedBy,
 	};
 }
 
-function createInitialLeadStatusPanelState(lead: LeadRecord): LeadStatusPanelState {
+function createEmptyLeadStatusPanelState(lid: string, updatedBy: string): LeadStatusPanelState {
+	return {
+		lid,
+		comments: "",
+		status: "",
+		otherStatus: "",
+		updatedBy,
+	};
+}
+
+function createInitialLeadStatusPanelState(lead: LeadRecord, leadStatus: CrmLeadStatusRecord | null, updatedBy: string): LeadStatusPanelState {
+	if (leadStatus) {
+		return {
+			lid: leadStatus.lid,
+			comments: leadStatus.comments,
+			status: isLeadPanelStatus(leadStatus.status) ? leadStatus.status : "Other",
+			otherStatus: leadStatus.otherStatus,
+			updatedBy: leadStatus.updatedBy || updatedBy,
+		};
+	}
+
 	return {
 		lid: lead.lid,
 		comments: "",
 		status: lead.status,
 		otherStatus: "",
-		updatedBy: "",
+		updatedBy,
 	};
 }
 
@@ -606,27 +850,22 @@ function getLeadBadgeTone(value: string) {
 	return "bg-sky-50 text-sky-700";
 }
 
-function buildFallbackLead(lid: string): LeadRecord {
-	return {
-		date: "26-05-2026",
-		leadGeneratedDate: "26-05-2026",
-		lid,
-		source: "Website",
-		assignedTo: { name: "CRM Team", initials: "CT" },
-		cid: "CID-0001",
-		customerName: "Green Loop Trading LLC",
-		wasteStream: "Plastic Recycling",
-		wasteClass: "Recyclable",
-		otherWasteClass: null,
-		estimatedQuantity: 0,
-		unit: "Tons",
-		labId: "",
-		labStatus: "Pending",
-		labUpdatedDate: "26-05-2026",
-		proposalId: null,
-		proposalStatus: "Draft",
-		proposalUpdatedDate: "26-05-2026",
-		status: "Open",
-		leadStatusUpdatedDate: "26-05-2026",
-	};
+function resolveErrorMessage(error: unknown, fallbackMessage: string) {
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
+	}
+
+	return fallbackMessage;
+}
+
+function isLabDecision(value: string): value is LabDecision {
+	return value === "Accept" || value === "Reject" || value === "Not Applicable" || value === "Other";
+}
+
+function isProposalPanelStatus(value: string): value is ProposalPanelStatus {
+	return value === "Sent" || value === "Under Review" || value === "Not Sent" || value === "Other";
+}
+
+function isLeadPanelStatus(value: string): value is LeadPanelStatus {
+	return value === "Open" || value === "Won" || value === "Lost" || value === "Other";
 }

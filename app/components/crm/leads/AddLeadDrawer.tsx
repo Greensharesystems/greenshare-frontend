@@ -6,17 +6,18 @@ import type { LeadRecord } from "@/components/crm/leads/LeadTable";
 type AddLeadDrawerProps = Readonly<{
 	open: boolean;
 	onClose: () => void;
-	onCreateLead: (leadData: LeadFormData) => void;
+	onCreateLead: (leadData: LeadFormData) => Promise<void>;
+	onGenerateLeadId: () => Promise<string>;
 	existingLeads: LeadRecord[];
 }>;
 
-export default function AddLeadDrawer({ open, onClose, onCreateLead, existingLeads }: AddLeadDrawerProps) {
+export default function AddLeadDrawer({ open, onClose, onCreateLead, onGenerateLeadId, existingLeads }: AddLeadDrawerProps) {
 	if (!open) {
 		return null;
 	}
 
-	function handleCreateLead(leadData: LeadFormData) {
-		onCreateLead(leadData);
+	async function handleCreateLead(leadData: LeadFormData) {
+		await onCreateLead(leadData);
 		onClose();
 	}
 
@@ -38,7 +39,7 @@ export default function AddLeadDrawer({ open, onClose, onCreateLead, existingLea
 					</button>
 				</div>
 
-				<LeadForm onSubmit={handleCreateLead} onCancel={onClose} existingLeads={existingLeads} />
+				<LeadForm onSubmit={handleCreateLead} onCancel={onClose} onGenerateLeadId={onGenerateLeadId} existingLeads={existingLeads} />
 			</div>
 		</div>
 	);

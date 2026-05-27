@@ -1,21 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import AddLeadDrawer from "@/components/crm/leads/AddLeadDrawer";
-import LeadTable, { initialLeadRows, type LeadRecord } from "@/components/crm/leads/LeadTable";
+import LeadTable, { type LeadRecord } from "@/components/crm/leads/LeadTable";
 import type { LeadFormData } from "@/components/crm/leads/LeadForm";
 import Button from "@/app/components/ui/Button";
+import { createLeadRecord, getLeadRecords, getNextLeadId } from "@/app/services/crm-leads.service";
 
 export default function EmployeeLeadsPage() {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-	const [leads, setLeads] = useState<LeadRecord[]>(initialLeadRows);
+	const [leads, setLeads] = useState<LeadRecord[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [pageError, setPageError] = useState<string | null>(null);
 
-	function handleCreateLead(leadData: LeadFormData) {
-		setLeads((currentLeads) => [
-			buildLeadRecord(leadData, currentLeads.length + 1),
-			...currentLeads,
-		]);
+	useEffect(() => {
+		void loadLeads();
+	}, []);
+
+	async function loadLeads() {
+		setIsLoading(true);
+		setPageError(null);
+
+		try {
+			setLeads(await getLeadRecords());
+		} catch (error) {
+			setPageError(resolveErrorMessage(error, "Unable to load CRM leads right now."));
+		} finally {
+			setIsLoading(false);
+		}
+	}
+
+	async function handleCreateLead(leadData: LeadFormData) {
+		const createdLead = await createLeadRecord(leadData);
+		setPageError(null);
+		setLeads((currentLeads) => [createdLead, ...currentLeads]);
+	}
+
+	async function handleGenerateLeadId() {
+		return getNextLeadId();
 	}
 
 	return (
@@ -32,56 +55,39 @@ export default function EmployeeLeadsPage() {
 						</Button>
 					</div>
 
-					<LeadTable leads={leads} />
+					{pageError ? (
+						<div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+							<span>{pageError}</span>
+							<Button variant="secondary" onClick={() => void loadLeads()}>
+								Retry
+							</Button>
+						</div>
+					) : null}
+
+					{isLoading ? (
+						<div className="rounded-[28px] border border-slate-200 bg-white px-6 py-10 text-sm text-slate-500 shadow-sm">
+							Loading CRM leads...
+						</div>
+					) : (
+						<LeadTable leads={leads} />
+					)}
 				</div>
 			</section>
-			<AddLeadDrawer open={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} onCreateLead={handleCreateLead} existingLeads={leads} />
+			<AddLeadDrawer
+				open={isDrawerOpen}
+				onClose={() => setIsDrawerOpen(false)}
+				onCreateLead={handleCreateLead}
+				onGenerateLeadId={handleGenerateLeadId}
+				existingLeads={leads}
+			/>
 		</>
 	);
 }
 
-function buildLeadRecord(leadData: LeadFormData, sequence: number): LeadRecord {
-	const sequenceText = String(sequence).padStart(4, "0");
-	const assignedToName = leadData.assignedTo === "Other" ? leadData.assignedPersonName : leadData.assignedTo;
-	const customerName = leadData.customerName.trim();
-	const cid = leadData.cid.trim();
-	const source = leadData.source === "Other" ? leadData.otherSource.trim() : leadData.source;
-	const unit = leadData.unit === "Others" ? leadData.otherUnit.trim() : leadData.unit;
-	const estimatedQuantity = Number(leadData.estimatedQuantity);
+function resolveErrorMessage(error: unknown, fallbackMessage: string) {
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
+	}
 
-	return {
-		date: leadData.leadDate,
-		leadGeneratedDate: leadData.leadDate,
-		lid: leadData.leadId,
-		source,
-		assignedTo: {
-			name: assignedToName,
-			initials: buildInitials(assignedToName),
-		},
-		cid,
-		customerName,
-		wasteStream: leadData.wasteStream,
-		wasteClass: leadData.wasteClass === "Non Hazardous" ? "Non-Hazardous" : leadData.wasteClass,
-		otherWasteClass: leadData.wasteClass === "Others" ? leadData.otherWasteClass.trim() : null,
-		estimatedQuantity,
-		unit,
-		labId: `LAB-${sequenceText}`,
-		labStatus: "Pending",
-		labUpdatedDate: leadData.leadDate,
-		proposalId: null,
-		proposalStatus: "Draft",
-		proposalUpdatedDate: leadData.leadDate,
-		status: "Open",
-		leadStatusUpdatedDate: leadData.leadDate,
-	};
-}
-
-function buildInitials(name: string) {
-	return name
-		.split(/\s+/)
-		.filter(Boolean)
-		.slice(0, 2)
-		.map((part) => part[0]?.toUpperCase() ?? "")
-		.join("")
-		|| "NA";
+	return fallbackMessage;
 }

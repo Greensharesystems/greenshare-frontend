@@ -90,16 +90,20 @@ const INITIAL_FORM_STATE: LeadFormState = {
 };
 
 type LeadFormProps = Readonly<{
-	onSubmit: (data: LeadFormData) => void;
+	onSubmit: (data: LeadFormData) => Promise<void>;
 	onCancel: () => void;
+	onGenerateLeadId: () => Promise<string>;
 	existingLeads: LeadRecord[];
 }>;
 
 
-export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadFormProps) {
+export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existingLeads }: LeadFormProps) {
 	const [formState, setFormState] = useState<LeadFormState>(INITIAL_FORM_STATE);
 	const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
 	const [showValidation, setShowValidation] = useState(false);
+	const [submissionError, setSubmissionError] = useState<string | null>(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isGeneratingLeadId, setIsGeneratingLeadId] = useState(false);
 
 	const customerOptions = useMemo<CustomerOption[]>(() => {
 		const seen = new Set<string>();
@@ -160,9 +164,10 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 		(!isReferralSource || Boolean(formState.referralName.trim())) &&
 		(!isOtherAssignee || Boolean(formState.assignedPersonName.trim()));
 
-	function handleSubmit(event: FormEvent<HTMLFormElement>) {
+	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setShowValidation(true);
+		setSubmissionError(null);
 
 		if (!isFormValid) {
 			return;
@@ -188,10 +193,18 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 			comments: formState.comments.trim(),
 		};
 
-		onSubmit(payload);
-		setFormState(INITIAL_FORM_STATE);
-		setShowValidation(false);
-		setIsCustomerMenuOpen(false);
+		setIsSubmitting(true);
+
+		try {
+			await onSubmit(payload);
+			setFormState(INITIAL_FORM_STATE);
+			setShowValidation(false);
+			setIsCustomerMenuOpen(false);
+		} catch (error) {
+			setSubmissionError(resolveErrorMessage(error, "Unable to save that lead right now."));
+		} finally {
+			setIsSubmitting(false);
+		}
 	}
 
 	function updateField<Key extends keyof LeadFormState>(key: Key, value: LeadFormState[Key]) {
@@ -303,18 +316,22 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 		setIsCustomerMenuOpen(false);
 	}
 
-	function generateLeadId() {
-		const nextSequence =
-			existingLeads.reduce((highest, lead) => {
-				const numericId = Number.parseInt(lead.lid.replace(/[^\d]/g, ""), 10);
-				return Number.isFinite(numericId) ? Math.max(highest, numericId) : highest;
-			}, 0) + 1;
+	async function generateLeadId() {
+		setSubmissionError(null);
+		setIsGeneratingLeadId(true);
 
-		setFormState((current) => ({
-			...current,
-			leadId: `LID-${String(nextSequence).padStart(4, "0")}`,
-			leadDate: formatLeadDate(new Date()),
-		}));
+		try {
+			const nextLeadId = await onGenerateLeadId();
+			setFormState((current) => ({
+				...current,
+				leadId: nextLeadId,
+				leadDate: formatLeadDate(new Date()),
+			}));
+		} catch (error) {
+			setSubmissionError(resolveErrorMessage(error, "Unable to generate a Lead ID right now."));
+		} finally {
+			setIsGeneratingLeadId(false);
+		}
 	}
 
 	return (
@@ -559,8 +576,8 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 									placeholder="Generate Lead ID"
 									className="h-11 flex-1 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
 								/>
-								<Button type="button" className="min-w-40 justify-center" onClick={generateLeadId}>
-									Generate Lead ID
+								<Button type="button" className="min-w-40 justify-center" onClick={generateLeadId} disabled={isGeneratingLeadId || isSubmitting}>
+									{isGeneratingLeadId ? "Generating..." : "Generate Lead ID"}
 								</Button>
 							</div>
 						</div>
@@ -593,15 +610,16 @@ export default function LeadForm({ onSubmit, onCancel, existingLeads }: LeadForm
 							Complete all required fields, including generating a Lead ID and any conditional names, before adding the lead.
 						</p>
 					) : null}
+					{submissionError ? <p className="mt-4 text-sm text-rose-600">{submissionError}</p> : null}
 				</section>
 			</div>
 
 			<div className="mt-auto flex flex-wrap justify-end gap-3 border-t border-slate-200 px-6 py-5">
-				<Button type="button" variant="secondary" onClick={onCancel}>
+				<Button type="button" variant="secondary" onClick={onCancel} disabled={isSubmitting || isGeneratingLeadId}>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={!isFormValid}>
-					Add Lead
+				<Button type="submit" disabled={!isFormValid || isSubmitting || isGeneratingLeadId}>
+					{isSubmitting ? "Saving..." : "Add Lead"}
 				</Button>
 			</div>
 		</form>
@@ -614,4 +632,13 @@ function formatLeadDate(date: Date) {
 	const year = String(date.getFullYear());
 
 	return `${day}-${month}-${year}`;
+}
+
+
+function resolveErrorMessage(error: unknown, fallbackMessage: string) {
+	if (error instanceof Error && error.message.trim()) {
+		return error.message;
+	}
+
+	return fallbackMessage;
 }
