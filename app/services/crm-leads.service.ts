@@ -177,6 +177,16 @@ export async function createLeadRecord(leadData: LeadFormData): Promise<LeadReco
 	return mapBackendLeadToLeadRecord(payload);
 }
 
+export async function deleteLeadRecord(lid: string): Promise<void> {
+	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}`, {
+		method: "DELETE",
+	});
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, "Unable to remove that lead right now."));
+	}
+}
+
 
 export async function getLabStatus(lid: string): Promise<CrmLabStatusRecord | null> {
 	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}/lab-status`, {

@@ -6,7 +6,7 @@ import AddLeadDrawer from "@/components/crm/leads/AddLeadDrawer";
 import LeadTable, { type LeadRecord } from "@/components/crm/leads/LeadTable";
 import type { LeadFormData } from "@/components/crm/leads/LeadForm";
 import Button from "@/app/components/ui/Button";
-import { createLeadRecord, getLeadRecords, getNextLeadId } from "@/app/services/crm-leads.service";
+import { createLeadRecord, deleteLeadRecord, getLeadRecords, getNextLeadId } from "@/app/services/crm-leads.service";
 
 export default function AdminLeadsPage() {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -14,6 +14,7 @@ export default function AdminLeadsPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [pageError, setPageError] = useState<string | null>(null);
 	const [removeTargetLid, setRemoveTargetLid] = useState<string | null>(null);
+	const [isRemoving, setIsRemoving] = useState(false);
 
 	useEffect(() => {
 		void loadLeads();
@@ -47,13 +48,23 @@ export default function AdminLeadsPage() {
 	}
 
 	function handleCancelRemove() {
+		if (isRemoving) return;
 		setRemoveTargetLid(null);
 	}
 
-	function handleConfirmRemove() {
-		if (!removeTargetLid) return;
-		setLeads((current) => current.filter((lead) => lead.lid !== removeTargetLid));
-		setRemoveTargetLid(null);
+	async function handleConfirmRemove() {
+		if (!removeTargetLid || isRemoving) return;
+		setIsRemoving(true);
+		try {
+			await deleteLeadRecord(removeTargetLid);
+			setLeads((current) => current.filter((lead) => lead.lid !== removeTargetLid));
+			setRemoveTargetLid(null);
+		} catch (error) {
+			setPageError(resolveErrorMessage(error, "Unable to remove that lead right now."));
+			setRemoveTargetLid(null);
+		} finally {
+			setIsRemoving(false);
+		}
 	}
 
 	return (
@@ -109,15 +120,16 @@ export default function AdminLeadsPage() {
 							<span className="font-semibold text-slate-900">{removeTargetLid}</span>? This action cannot be undone.
 						</p>
 						<div className="mt-6 flex justify-end gap-3">
-							<Button variant="secondary" onClick={handleCancelRemove}>
+							<Button variant="secondary" onClick={handleCancelRemove} disabled={isRemoving}>
 								Cancel
 							</Button>
 							<button
 								type="button"
-								onClick={handleConfirmRemove}
-								className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-600 bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-600/25"
+								onClick={() => void handleConfirmRemove()}
+								disabled={isRemoving}
+								className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-600 bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-600/25 disabled:opacity-60 disabled:cursor-not-allowed"
 							>
-								Remove
+								{isRemoving ? "Removing…" : "Remove"}
 							</button>
 						</div>
 					</div>
