@@ -27,11 +27,14 @@ type BackendLeadResponse = Readonly<{
 	updated_at: string;
 	lab_id?: string | null;
 	lab_status: string;
+	lab_status_days: number;
 	lab_updated_at: string;
 	proposal_id?: string | null;
 	proposal_status: string;
+	proposal_status_days: number;
 	proposal_updated_at: string;
 	lead_status: string;
+	lead_status_days: number;
 	lead_status_updated_at: string;
 }>;
 
@@ -321,11 +324,14 @@ function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
 		unit: resolveUnit(lead.unit, lead.unit_other),
 		labId: lead.lab_id ?? "",
 		labStatus: mapLabStatus(lead.lab_status),
+		labStatusDays: Number.isFinite(lead.lab_status_days) ? lead.lab_status_days : 0,
 		labUpdatedDate: lead.lab_updated_at || lead.lead_date,
 		proposalId: lead.proposal_id ?? null,
 		proposalStatus: mapProposalStatus(lead.proposal_status),
+		proposalStatusDays: Number.isFinite(lead.proposal_status_days) ? lead.proposal_status_days : 0,
 		proposalUpdatedDate: lead.proposal_updated_at || lead.lead_date,
 		status: mapLeadLifecycleStatus(lead.lead_status),
+		leadStatusDays: Number.isFinite(lead.lead_status_days) ? lead.lead_status_days : 0,
 		leadStatusUpdatedDate: lead.lead_status_updated_at || lead.lead_date,
 	};
 }
@@ -459,7 +465,15 @@ function mapWasteClass(value: string): WasteClass {
 
 
 function mapLabStatus(value: string): LabStatus {
-	if (value === "Approved" || value === "Rejected") {
+	if (value === "Approved") {
+		return "Accept";
+	}
+
+	if (value === "Rejected") {
+		return "Reject";
+	}
+
+	if (value === "Accept" || value === "Reject" || value === "Not Applicable" || value === "Other") {
 		return value;
 	}
 
@@ -468,16 +482,20 @@ function mapLabStatus(value: string): LabStatus {
 
 
 function mapProposalStatus(value: string): ProposalStatus {
-	if (value === "Sent" || value === "Draft" || value === "Not Sent" || value === "Accepted" || value === "Under Review") {
+	if (value === "Draft") {
+		return "Pending";
+	}
+
+	if (value === "Pending" || value === "Sent" || value === "Not Sent" || value === "Accepted" || value === "Under Review" || value === "Other") {
 		return value;
 	}
 
-	return "Draft";
+	return "Pending";
 }
 
 
 function mapLeadLifecycleStatus(value: string): LeadLifecycleStatus {
-	if (value === "Won" || value === "Lost") {
+	if (value === "Won" || value === "Lost" || value === "Other") {
 		return value;
 	}
 

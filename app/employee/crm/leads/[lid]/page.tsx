@@ -610,14 +610,14 @@ function createEmptyLabPanelState(lid: string, chemistName: string): LabPanelSta
 		lid,
 		labId: "",
 		comments: "",
-		decision: "Not Applicable",
+		decision: "",
 		otherDecision: "",
 		chemistName,
 	};
 }
 
 function createInitialLabPanelState(lead: LeadRecord, status: CrmLabStatusRecord | null, chemistName: string): LabPanelState {
-	if (status) {
+	if (status && status.decision.trim()) {
 		return {
 			lid: status.lid,
 			labId: status.labId,
@@ -652,7 +652,7 @@ function createEmptyProposalPanelState(lid: string, updatedBy: string): Proposal
 }
 
 function createInitialProposalPanelState(lead: LeadRecord, proposalStatus: CrmProposalStatusRecord | null, updatedBy: string): ProposalPanelState {
-	if (proposalStatus) {
+	if (proposalStatus && proposalStatus.status.trim()) {
 		return {
 			lid: proposalStatus.lid,
 			pid: proposalStatus.pid,
@@ -798,24 +798,36 @@ function buildLeadStatusPreviewRows(state: LeadStatusPanelState) {
 }
 
 function mapLabStatusToDecision(status: LeadRecord["labStatus"]) {
-	if (status === "Approved") {
+	if (status === "Approved" || status === "Accept") {
 		return { value: "Accept" as const, otherValue: "" };
 	}
-	if (status === "Rejected") {
+	if (status === "Rejected" || status === "Reject") {
 		return { value: "Reject" as const, otherValue: "" };
 	}
-	return { value: "Not Applicable" as const, otherValue: "" };
+	if (status === "Not Applicable") {
+		return { value: "Not Applicable" as const, otherValue: "" };
+	}
+	if (status === "Other") {
+		return { value: "Other" as const, otherValue: "" };
+	}
+	return { value: "" as const, otherValue: "" };
 }
 
 function mapProposalStatusToPanelStatus(status: LeadRecord["proposalStatus"]) {
+	if (status === "Pending" || status === "Draft") {
+		return { value: "" as const, otherValue: "" };
+	}
 	if (status === "Sent") {
 		return { value: "Sent" as const, otherValue: "" };
 	}
 	if (status === "Under Review") {
 		return { value: "Under Review" as const, otherValue: "" };
 	}
-	if (status === "Not Sent" || status === "Draft") {
+	if (status === "Not Sent") {
 		return { value: "Not Sent" as const, otherValue: "" };
+	}
+	if (status === "Other") {
+		return { value: "Other" as const, otherValue: "" };
 	}
 	return { value: "Other" as const, otherValue: status };
 }

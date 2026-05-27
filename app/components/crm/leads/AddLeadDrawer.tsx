@@ -1,17 +1,15 @@
 "use client";
 
 import LeadForm, { type LeadFormData } from "@/components/crm/leads/LeadForm";
-import type { LeadRecord } from "@/components/crm/leads/LeadTable";
 
 type AddLeadDrawerProps = Readonly<{
 	open: boolean;
 	onClose: () => void;
 	onCreateLead: (leadData: LeadFormData) => Promise<void>;
 	onGenerateLeadId: () => Promise<string>;
-	existingLeads: LeadRecord[];
 }>;
 
-export default function AddLeadDrawer({ open, onClose, onCreateLead, onGenerateLeadId, existingLeads }: AddLeadDrawerProps) {
+export default function AddLeadDrawer({ open, onClose, onCreateLead, onGenerateLeadId }: AddLeadDrawerProps) {
 	if (!open) {
 		return null;
 	}
@@ -39,7 +37,7 @@ export default function AddLeadDrawer({ open, onClose, onCreateLead, onGenerateL
 					</button>
 				</div>
 
-				<LeadForm onSubmit={handleCreateLead} onCancel={onClose} onGenerateLeadId={onGenerateLeadId} existingLeads={existingLeads} />
+				<LeadForm onSubmit={handleCreateLead} onCancel={onClose} onGenerateLeadId={onGenerateLeadId} />
 			</div>
 		</div>
 	);

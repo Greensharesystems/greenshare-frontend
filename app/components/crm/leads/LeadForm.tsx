@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import Button from "@/app/components/ui/Button";
-import type { LeadRecord } from "@/components/crm/leads/LeadTable";
+import { searchCustomers } from "@/app/services/customers.service";
 
 export type LeadFormData = Readonly<{
 	cid: string;
@@ -93,51 +93,20 @@ type LeadFormProps = Readonly<{
 	onSubmit: (data: LeadFormData) => Promise<void>;
 	onCancel: () => void;
 	onGenerateLeadId: () => Promise<string>;
-	existingLeads: LeadRecord[];
 }>;
 
 
-export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existingLeads }: LeadFormProps) {
+export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadFormProps) {
 	const [formState, setFormState] = useState<LeadFormState>(INITIAL_FORM_STATE);
+	const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([]);
 	const [isCustomerMenuOpen, setIsCustomerMenuOpen] = useState(false);
+	const [isCustomerLookupLoading, setIsCustomerLookupLoading] = useState(false);
 	const [showValidation, setShowValidation] = useState(false);
 	const [submissionError, setSubmissionError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isGeneratingLeadId, setIsGeneratingLeadId] = useState(false);
-
-	const customerOptions = useMemo<CustomerOption[]>(() => {
-		const seen = new Set<string>();
-
-		return existingLeads.reduce<CustomerOption[]>((options, lead) => {
-			const cid = lead.cid.trim();
-			const customerName = lead.customerName.trim();
-
-			if (!cid || !customerName) {
-				return options;
-			}
-
-			const key = `${cid.toLowerCase()}::${customerName.toLowerCase()}`;
-			if (seen.has(key)) {
-				return options;
-			}
-
-			seen.add(key);
-			options.push({ cid, customerName });
-			return options;
-		}, []);
-	}, [existingLeads]);
-
-	const filteredCustomers = useMemo(() => {
-		const query = formState.customerName.trim().toLowerCase();
-
-		if (!query) {
-			return customerOptions.slice(0, 6);
-		}
-
-		return customerOptions
-			.filter((customer) => customer.customerName.toLowerCase().includes(query) || customer.cid.toLowerCase().includes(query))
-			.slice(0, 6);
-	}, [customerOptions, formState.customerName]);
+	const customerSearchCacheRef = useRef(new Map<string, CustomerOption[]>());
+	const customerLookupRequestIdRef = useRef(0);
 
 	const isTransporterSource = formState.source === "Transporter";
 	const isReferralSource = formState.source === "Referral";
@@ -145,7 +114,7 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existin
 	const isOtherAssignee = formState.assignedTo === "Other";
 	const isOtherWasteClass = formState.wasteClass === "Others";
 	const isOtherUnit = formState.unit === "Others";
-	const hasCustomerIdentity = Boolean(formState.cid.trim() || formState.customerName.trim());
+	const hasCustomerIdentity = Boolean(formState.cid.trim() && formState.customerName.trim());
 	const hasGeneratedLead = Boolean(formState.leadId && formState.leadDate);
 	const hasEstimatedQuantity = Boolean(formState.estimatedQuantity.trim()) && Number.isFinite(Number(formState.estimatedQuantity));
 	const isFormValid =
@@ -163,6 +132,84 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existin
 		(!isTransporterSource || Boolean(formState.transporterName.trim())) &&
 		(!isReferralSource || Boolean(formState.referralName.trim())) &&
 		(!isOtherAssignee || Boolean(formState.assignedPersonName.trim()));
+
+	useEffect(() => {
+		const cidQuery = formState.cid.trim().toUpperCase();
+		if (!cidQuery) {
+			return;
+		}
+
+		const timeoutId = window.setTimeout(() => {
+			void lookupCustomers(cidQuery, (results) => {
+				const exactCustomer = results.find((customer) => customer.cid.toLowerCase() === cidQuery.toLowerCase()) ?? null;
+
+				setFormState((current) => {
+					if (current.cid.trim().toUpperCase() !== cidQuery) {
+						return current;
+					}
+
+					if (!exactCustomer) {
+						if (current.selectedCustomerCid && current.selectedCustomerCid.toLowerCase() !== cidQuery.toLowerCase()) {
+							return {
+								...current,
+								customerName: "",
+								selectedCustomerCid: null,
+							};
+						}
+
+						return current;
+					}
+
+					return {
+						...current,
+						cid: exactCustomer.cid,
+						customerName: exactCustomer.customerName,
+						selectedCustomerCid: exactCustomer.cid,
+					};
+				});
+			});
+		}, 300);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [formState.cid]);
+
+	useEffect(() => {
+		if (!isCustomerMenuOpen) {
+			return;
+		}
+
+		const nameQuery = formState.customerName.trim();
+		if (!nameQuery) {
+			setCustomerOptions([]);
+			return;
+		}
+
+		const timeoutId = window.setTimeout(() => {
+			void lookupCustomers(nameQuery, (results) => {
+				setCustomerOptions(results);
+				const exactCustomer = results.find((customer) => customer.customerName.toLowerCase() === nameQuery.toLowerCase()) ?? null;
+
+				if (!exactCustomer) {
+					return;
+				}
+
+				setFormState((current) => {
+					if (current.customerName.trim().toLowerCase() !== nameQuery.toLowerCase()) {
+						return current;
+					}
+
+					return {
+						...current,
+						cid: exactCustomer.cid,
+						customerName: exactCustomer.customerName,
+						selectedCustomerCid: exactCustomer.cid,
+					};
+				});
+			});
+		}, 300);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [formState.customerName, isCustomerMenuOpen]);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -248,62 +295,29 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existin
 		}));
 	}
 
-	function findCustomerByCid(cid: string) {
-		const normalizedCid = cid.trim().toLowerCase();
-		return customerOptions.find((customer) => customer.cid.toLowerCase() === normalizedCid) ?? null;
-	}
-
-	function findCustomerByName(name: string) {
-		const normalizedName = name.trim().toLowerCase();
-		return customerOptions.find((customer) => customer.customerName.toLowerCase() === normalizedName) ?? null;
-	}
-
 	function handleCidChange(value: string) {
+		const normalizedCid = value.toUpperCase();
 		setFormState((current) => {
-			const previousCustomer = current.selectedCustomerCid ? findCustomerByCid(current.selectedCustomerCid) : null;
-			const match = findCustomerByCid(value);
-
-			if (match) {
-				return {
-					...current,
-					cid: value,
-					customerName: match.customerName,
-					selectedCustomerCid: match.cid,
-				};
-			}
-
 			return {
 				...current,
-				cid: value,
-				customerName:
-					previousCustomer && current.customerName === previousCustomer.customerName ? "" : current.customerName,
-				selectedCustomerCid: null,
+				cid: normalizedCid,
+				customerName: current.selectedCustomerCid && current.selectedCustomerCid !== normalizedCid ? "" : current.customerName,
+				selectedCustomerCid: current.selectedCustomerCid === normalizedCid ? current.selectedCustomerCid : null,
 			};
 		});
 	}
 
 	function handleCustomerNameChange(value: string) {
 		setFormState((current) => {
-			const previousCustomer = current.selectedCustomerCid ? findCustomerByCid(current.selectedCustomerCid) : null;
-			const match = findCustomerByName(value);
-
-			if (match) {
-				return {
-					...current,
-					customerName: value,
-					cid: match.cid,
-					selectedCustomerCid: match.cid,
-				};
-			}
-
 			return {
 				...current,
 				customerName: value,
-				cid: previousCustomer && current.cid === previousCustomer.cid ? "" : current.cid,
+				cid: current.selectedCustomerCid ? "" : current.cid,
 				selectedCustomerCid: null,
 			};
 		});
 		setIsCustomerMenuOpen(true);
+		setCustomerOptions([]);
 	}
 
 	function handleCustomerSelect(customer: CustomerOption) {
@@ -313,7 +327,44 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existin
 			customerName: customer.customerName,
 			selectedCustomerCid: customer.cid,
 		}));
+		setCustomerOptions([customer]);
 		setIsCustomerMenuOpen(false);
+	}
+
+	async function lookupCustomers(query: string, onResolved: (results: CustomerOption[]) => void) {
+		const normalizedQuery = query.trim();
+		if (!normalizedQuery) {
+			onResolved([]);
+			return;
+		}
+
+		const cacheKey = normalizedQuery.toLowerCase();
+		const cachedResults = customerSearchCacheRef.current.get(cacheKey);
+		if (cachedResults) {
+			onResolved(cachedResults);
+			return;
+		}
+
+		const requestId = ++customerLookupRequestIdRef.current;
+		setIsCustomerLookupLoading(true);
+		setSubmissionError(null);
+
+		try {
+			const results = (await searchCustomers(normalizedQuery)).slice(0, 6);
+			customerSearchCacheRef.current.set(cacheKey, results);
+
+			if (requestId === customerLookupRequestIdRef.current) {
+				onResolved(results);
+			}
+		} catch (error) {
+			if (requestId === customerLookupRequestIdRef.current) {
+				setSubmissionError(resolveErrorMessage(error, "Unable to search customers right now."));
+			}
+		} finally {
+			if (requestId === customerLookupRequestIdRef.current) {
+				setIsCustomerLookupLoading(false);
+			}
+		}
 	}
 
 	async function generateLeadId() {
@@ -365,9 +416,11 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existin
 								placeholder="Search customer name"
 								className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
 							/>
-							{isCustomerMenuOpen && filteredCustomers.length > 0 ? (
+							{isCustomerMenuOpen && (isCustomerLookupLoading || customerOptions.length > 0 || Boolean(formState.customerName.trim())) ? (
 								<div className="absolute top-full z-10 mt-2 max-h-52 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg">
-									{filteredCustomers.map((customer) => (
+									{isCustomerLookupLoading ? <div className="px-3 py-2 text-sm text-slate-500">Searching customers...</div> : null}
+									{!isCustomerLookupLoading && customerOptions.length === 0 ? <div className="px-3 py-2 text-sm text-slate-500">No registered customers found.</div> : null}
+									{customerOptions.map((customer) => (
 										<button
 											key={customer.cid}
 											type="button"
@@ -386,7 +439,7 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId, existin
 						</div>
 					</div>
 					{showValidation && !hasCustomerIdentity ? (
-						<p className="mt-3 text-sm text-rose-600">Enter a CID or a customer name before adding the lead.</p>
+						<p className="mt-3 text-sm text-rose-600">Select a registered customer so both CID and Customer Name are populated.</p>
 					) : null}
 				</section>
 
