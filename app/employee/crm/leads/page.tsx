@@ -78,7 +78,6 @@ export default function EmployeeLeadsPage() {
 				onClose={() => setIsDrawerOpen(false)}
 				onCreateLead={handleCreateLead}
 				onGenerateLeadId={handleGenerateLeadId}
-				existingLeads={leads}
 			/>
 		</>
 	);

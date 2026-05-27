@@ -3,6 +3,35 @@
 import { apiFetch } from "@/app/utils/api";
 
 
+export type CustomerSearchRecord = Readonly<{
+	cid: string;
+	customerName: string;
+}>;
+
+
+export async function searchCustomers(query: string): Promise<CustomerSearchRecord[]> {
+	const trimmedQuery = query.trim();
+	if (!trimmedQuery) {
+		return [];
+	}
+
+	const response = await apiFetch(`/customers/search?q=${encodeURIComponent(trimmedQuery)}`, {
+		cache: "no-store",
+	});
+
+	if (!response.ok) {
+		const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
+		throw new Error(payload?.detail ?? "Unable to search customers right now.");
+	}
+
+	const payload = (await response.json()) as Array<{ cid?: string; customer_name?: string }>;
+	return payload.map((customer) => ({
+		cid: String(customer.cid ?? "").trim(),
+		customerName: String(customer.customer_name ?? "").trim(),
+	}));
+}
+
+
 export async function downloadCustomersCsv(customerIds: string[]): Promise<void> {
 	const response = await apiFetch("/customers/export/csv", {
 		method: "POST",

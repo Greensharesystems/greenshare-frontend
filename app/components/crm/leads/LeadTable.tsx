@@ -6,9 +6,9 @@ import { Download, Eye, Pencil, Search, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 
-export type LeadLifecycleStatus = "Open" | "Won" | "Lost";
-export type LabStatus = "Approved" | "Pending" | "Rejected";
-export type ProposalStatus = "Sent" | "Draft" | "Not Sent" | "Accepted" | "Under Review";
+export type LeadLifecycleStatus = "Open" | "Won" | "Lost" | "Other";
+export type LabStatus = "Accept" | "Reject" | "Not Applicable" | "Other" | "Pending" | "Approved" | "Rejected";
+export type ProposalStatus = "Pending" | "Sent" | "Draft" | "Not Sent" | "Accepted" | "Under Review" | "Other";
 export type WasteClass = "Hazardous" | "Recyclable" | "Non-Hazardous" | "Others";
 
 type Assignee = Readonly<{
@@ -31,11 +31,14 @@ export type LeadRecord = Readonly<{
 	unit: string;
 	labId: string;
 	labStatus: LabStatus;
+	labStatusDays: number;
 	labUpdatedDate: string;
 	proposalId: string | null;
 	proposalStatus: ProposalStatus;
+	proposalStatusDays: number;
 	proposalUpdatedDate: string;
 	status: LeadLifecycleStatus;
+	leadStatusDays: number;
 	leadStatusUpdatedDate: string;
 }>;
 
@@ -73,18 +76,25 @@ const LEAD_STATUS_DAY_OFFSETS = [13, 6, 9, 3, 10, 7, 11, 4, 8, 9, 12, 3, 10, 6, 
 
 const badgeClasses = {
 	lab: {
+		Accept: "bg-emerald-50 text-emerald-700 ring-emerald-200",
 		Approved: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+		"Not Applicable": "bg-slate-100 text-slate-600 ring-slate-200",
+		Other: "bg-slate-100 text-slate-600 ring-slate-200",
 		Pending: "bg-amber-50 text-amber-700 ring-amber-200",
+		Reject: "bg-rose-50 text-rose-700 ring-rose-200",
 		Rejected: "bg-rose-50 text-rose-700 ring-rose-200",
 	},
 	proposal: {
+		Pending: "bg-amber-50 text-amber-700 ring-amber-200",
 		Sent: "bg-sky-50 text-sky-700 ring-sky-200",
 		Draft: "bg-slate-100 text-slate-600 ring-slate-200",
 		"Not Sent": "bg-slate-100 text-slate-600 ring-slate-200",
 		Accepted: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+		Other: "bg-slate-100 text-slate-600 ring-slate-200",
 		"Under Review": "bg-violet-50 text-violet-700 ring-violet-200",
 	},
 	status: {
+		Other: "bg-slate-100 text-slate-600 ring-slate-200",
 		Open: "bg-sky-50 text-sky-700 ring-sky-200",
 		Won: "bg-emerald-50 text-emerald-700 ring-emerald-200",
 		Lost: "bg-rose-50 text-rose-700 ring-rose-200",
@@ -115,6 +125,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0001",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "08-05-2026",
@@ -133,6 +146,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Draft",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "09-05-2026",
@@ -151,6 +167,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0002",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "10-05-2026",
@@ -169,6 +188,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Not Sent",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "11-05-2026",
@@ -187,6 +209,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0003",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "12-05-2026",
@@ -205,6 +230,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0004",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "13-05-2026",
@@ -223,6 +251,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0005",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "14-05-2026",
@@ -241,6 +272,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Draft",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "15-05-2026",
@@ -259,6 +293,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0006",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "16-05-2026",
@@ -277,6 +314,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0007",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "17-05-2026",
@@ -295,6 +335,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0008",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "18-05-2026",
@@ -313,6 +356,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Not Sent",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "19-05-2026",
@@ -331,6 +377,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0009",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "20-05-2026",
@@ -349,6 +398,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0010",
 		proposalStatus: "Draft",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "21-05-2026",
@@ -367,6 +419,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0011",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "22-05-2026",
@@ -385,6 +440,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0012",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "23-05-2026",
@@ -403,6 +461,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Not Sent",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "24-05-2026",
@@ -421,6 +482,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0013",
 		proposalStatus: "Draft",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "25-05-2026",
@@ -439,6 +503,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0014",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "26-05-2026",
@@ -457,14 +524,20 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0015",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	];
 
 export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => ({
 	...lead,
 	leadGeneratedDate: lead.date,
+	labStatusDays: calculateDaysBetween(lead.date, addDaysToDisplayDate(lead.date, LAB_STATUS_DAY_OFFSETS[index] ?? 0)),
 	labUpdatedDate: addDaysToDisplayDate(lead.date, LAB_STATUS_DAY_OFFSETS[index] ?? 0),
+	proposalStatusDays: calculateDaysBetween(lead.date, addDaysToDisplayDate(lead.date, PROPOSAL_STATUS_DAY_OFFSETS[index] ?? 0)),
 	proposalUpdatedDate: addDaysToDisplayDate(lead.date, PROPOSAL_STATUS_DAY_OFFSETS[index] ?? 0),
+	leadStatusDays: calculateDaysBetween(lead.date, addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0)),
 	leadStatusUpdatedDate: addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0),
 }));
 
@@ -553,12 +626,12 @@ export default function LeadTable({ leads }: LeadTableProps) {
 			lead.unit,
 			lead.labId,
 			lead.labStatus,
-			formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.labUpdatedDate)),
+			formatDays(lead.labStatusDays),
 			lead.proposalId ?? "-",
 			lead.proposalStatus,
-			formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.proposalUpdatedDate)),
+			formatDays(lead.proposalStatusDays),
 			lead.status,
-			formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.leadStatusUpdatedDate)),
+			formatDays(lead.leadStatusDays),
 		]);
 
 		const csv = [header, ...rows]
@@ -592,9 +665,9 @@ export default function LeadTable({ leads }: LeadTableProps) {
 							</div>
 						</label>
 					<FilterSelect className="w-38" label="Assigned To" value={filters.assignedTo} onChange={(value) => updateFilter("assignedTo", value)} options={assignedToOptions} />
-					<FilterSelect className="w-36" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Approved", "Pending", "Rejected"]} />
-					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Sent", "Draft", "Not Sent", "Accepted", "Under Review"]} />
-					<FilterSelect className="w-32" label="Lead Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost"]} />
+					<FilterSelect className="w-36" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Pending", "Accept", "Reject", "Not Applicable", "Other"]} />
+					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Pending", "Sent", "Under Review", "Not Sent", "Other"]} />
+					<FilterSelect className="w-32" label="Lead Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost", "Other"]} />
 					<div className="flex items-end gap-2">
 						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
 							<Download className="h-3.5 w-3.5" />
@@ -697,18 +770,18 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell>
 											<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.labUpdatedDate))}</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.labStatusDays)}</DataCell>
 										<DataCell>
 											{lead.proposalId ? <RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
 										</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.proposalUpdatedDate))}</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.proposalStatusDays)}</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(calculateDaysBetween(lead.leadGeneratedDate, lead.leadStatusUpdatedDate))}</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.leadStatusDays)}</DataCell>
 										<DataCell centered>
 											<div className="flex items-center justify-center gap-1.5">
 												<ActionLink href={`/employee/crm/leads/${lead.lid}`} label="View">
