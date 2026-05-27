@@ -125,6 +125,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0001",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "08-05-2026",
@@ -143,6 +146,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Draft",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "09-05-2026",
@@ -161,6 +167,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0002",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "10-05-2026",
@@ -179,6 +188,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Not Sent",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "11-05-2026",
@@ -197,6 +209,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0003",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "12-05-2026",
@@ -215,6 +230,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0004",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "13-05-2026",
@@ -233,6 +251,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0005",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "14-05-2026",
@@ -251,6 +272,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Draft",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "15-05-2026",
@@ -269,6 +293,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0006",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "16-05-2026",
@@ -287,6 +314,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0007",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "17-05-2026",
@@ -305,6 +335,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0008",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "18-05-2026",
@@ -323,6 +356,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Not Sent",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "19-05-2026",
@@ -341,6 +377,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0009",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "20-05-2026",
@@ -359,6 +398,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0010",
 		proposalStatus: "Draft",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "21-05-2026",
@@ -377,6 +419,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0011",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "22-05-2026",
@@ -395,6 +440,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0012",
 		proposalStatus: "Accepted",
 		status: "Won",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "23-05-2026",
@@ -413,6 +461,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: null,
 		proposalStatus: "Not Sent",
 		status: "Lost",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "24-05-2026",
@@ -431,6 +482,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0013",
 		proposalStatus: "Draft",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "25-05-2026",
@@ -449,6 +503,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0014",
 		proposalStatus: "Under Review",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	{
 		date: "26-05-2026",
@@ -467,6 +524,9 @@ const baseLeadRows: BaseLeadRecord[] = [
 		proposalId: "PID-0015",
 		proposalStatus: "Sent",
 		status: "Open",
+		labStatusDays: 0,
+		proposalStatusDays: 0,
+		leadStatusDays: 0,
 	},
 	];
 
