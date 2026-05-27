@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import AppShell from "@/app/components/layout/AppShell";
 import Header from "@/app/components/layout/Header";
@@ -15,8 +15,19 @@ const adminLinks = [
 	{ href: "/admin/users", label: "Users" },
 	{ href: "/admin/customers", label: "Customers" },
 	{ href: "/admin/access-control", label: "Access Control" },
-	{ href: "/admin/records", label: "Records" },
-	{ href: "/admin/certificates", label: "Certificates" },
+];
+
+const adminGrowthLinks = [
+	{ href: "/admin/crm/dashboard", label: "Dashboard" },
+	{ href: "/admin/crm/leads", label: "Leads" },
+	{ href: "/admin/crm/proposals", label: "Proposals" },
+];
+
+const adminTraceabilityLinks = [
+	{ href: "/admin/traceability/dashboard", label: "Dashboard" },
+	{ href: "/admin/traceability/reception-notes", label: "Reception Notes" },
+	{ href: "/admin/traceability/reception-certificates", label: "Reception Certificates" },
+	{ href: "/admin/traceability/circularity-certificates", label: "Circularity Certificates" },
 ];
 
 export default function AdminLayout({
@@ -24,6 +35,7 @@ export default function AdminLayout({
 }: Readonly<{
 	children: ReactNode;
 }>) {
+	const pathname = usePathname();
 	const router = useRouter();
 	const { session, isReady, logout, hasAccess } = useProtectedModule("admin");
 
@@ -38,8 +50,70 @@ export default function AdminLayout({
 
 	const roleLetter = session.role === "admin" ? "A" : session.role === "customer" ? "C" : "E";
 
+	function getNavItemClassName(isActive: boolean) {
+		return [
+			"flex min-h-11 w-full items-center justify-center rounded-2xl px-2 text-center text-xs font-medium transition",
+			isActive ? "font-semibold text-green-600" : "text-slate-600 hover:bg-slate-100 hover:text-[#3CD05A]",
+		].join(" ");
+	}
+
+	function getSubmenuItemClassName(isActive: boolean) {
+		return [
+			"flex w-full items-center rounded-2xl px-4 py-2 text-left text-xs font-medium transition",
+			isActive ? "font-semibold text-green-600" : "text-slate-600 hover:bg-slate-100 hover:text-[#3CD05A]",
+		].join(" ");
+	}
+
+	function getFlyoutTriggerClassName() {
+		return "flex min-h-11 w-full items-center justify-center rounded-2xl px-2 text-center text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-[#3CD05A] group-hover:bg-slate-100 group-hover:text-[#3CD05A]";
+	}
+
+	function renderNavLink(item: { href: string; label: string }) {
+		const isActive = pathname === item.href;
+
+		return (
+			<Link key={item.href} href={item.href} className={getNavItemClassName(isActive)}>
+				<span className={item.label === "Dashboard" ? "inline-flex -translate-x-2 items-center gap-1.25" : "inline-flex items-center gap-1.25"}>
+					{item.label === "Dashboard" ? <Image src="/icons/dashboardicon.png" alt="" width={16} height={16} className="h-4 w-4 object-contain" /> : null}
+					<span className={item.label === "Dashboard" ? "text-[11px]" : undefined}>{item.label}</span>
+				</span>
+			</Link>
+		);
+	}
+
+	function renderSubmenuLink(item: { href: string; label: string }) {
+		const isActive = pathname === item.href;
+
+		return (
+			<Link key={item.href} href={item.href} className={getSubmenuItemClassName(isActive)}>
+				<span>{item.label}</span>
+			</Link>
+		);
+	}
+
+	function renderFlyoutMenu(label: string, items: Array<{ href: string; label: string }>) {
+		return (
+			<div className="group relative flex w-full justify-center">
+				<div className={getFlyoutTriggerClassName()}>
+					<span className="inline-flex items-center gap-1.5">
+						<span>{label}</span>
+						<span aria-hidden="true" className="text-[10px] text-slate-400 transition group-hover:text-[#3CD05A]">
+							&gt;
+						</span>
+					</span>
+				</div>
+				<div className="pointer-events-none invisible absolute left-full top-0 z-40 flex pl-2 opacity-0 transition group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
+					<div className="flex min-w-44 flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
+						{items.map(renderSubmenuLink)}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<AppShell
+			sidebarClassName="overflow-visible"
 			header={
 				<Header
 					profile={
@@ -58,18 +132,9 @@ export default function AdminLayout({
 				<Sidebar
 					navigation={
 						<nav className="flex w-full flex-col items-center gap-2">
-							{adminLinks.map((item) => (
-								<Link
-									key={item.href}
-									href={item.href}
-									className="flex min-h-11 w-full items-center justify-center rounded-2xl px-2 text-center text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-[#3CD05A]"
-								>
-									<span className={item.label === "Dashboard" ? "inline-flex -translate-x-2 items-center gap-1.25" : "inline-flex items-center gap-1.25"}>
-										{item.label === "Dashboard" ? <Image src="/icons/dashboardicon.png" alt="" width={16} height={16} className="h-4 w-4 object-contain" /> : null}
-										<span className={item.label === "Dashboard" ? "text-[11px]" : undefined}>{item.label}</span>
-									</span>
-								</Link>
-							))}
+							{adminLinks.map(renderNavLink)}
+							{renderFlyoutMenu("Growth", adminGrowthLinks)}
+							{renderFlyoutMenu("Traceability", adminTraceabilityLinks)}
 						</nav>
 					}
 					footer={

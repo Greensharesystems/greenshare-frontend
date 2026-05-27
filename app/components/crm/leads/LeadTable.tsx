@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Download, Eye, Pencil, Search, X } from "lucide-react";
+import { Download, Eye, Pencil, Search, Trash2, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 
@@ -46,6 +46,8 @@ type BaseLeadRecord = Omit<LeadRecord, "leadGeneratedDate" | "labUpdatedDate" | 
 
 type LeadTableProps = Readonly<{
 	leads: LeadRecord[];
+	linkBase?: string;
+	onRemove?: (lid: string) => void;
 }>;
 
 type FilterState = Readonly<{
@@ -541,7 +543,7 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 	leadStatusUpdatedDate: addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0),
 }));
 
-export default function LeadTable({ leads }: LeadTableProps) {
+export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onRemove }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(20);
 	const [currentPage, setCurrentPage] = useState(1);
@@ -745,7 +747,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 									<tr key={lead.lid} className="bg-white transition hover:bg-slate-50/80">
 										<DataCell>{lead.date}</DataCell>
 										<DataCell>
-											<RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.lid} />
+										<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.lid} />
 										</DataCell>
 										<DataCell>{lead.source}</DataCell>
 										<DataCell>
@@ -755,7 +757,7 @@ export default function LeadTable({ leads }: LeadTableProps) {
 											</div>
 										</DataCell>
 										<DataCell>
-											<RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.cid} />
+										<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.cid} />
 										</DataCell>
 										<DataCell className="max-w-36.5 truncate">{lead.customerName}</DataCell>
 										<DataCell className="max-w-31 truncate">{lead.wasteStream}</DataCell>
@@ -765,14 +767,14 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell>{lead.estimatedQuantity}</DataCell>
 										<DataCell>{lead.unit}</DataCell>
 										<DataCell>
-											<RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.labId} />
+										<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.labId} />
 										</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
 										</DataCell>
 										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.labStatusDays)}</DataCell>
 										<DataCell>
-											{lead.proposalId ? <RecordLink href={`/employee/crm/leads/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
+										{lead.proposalId ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
 										</DataCell>
 										<DataCell>
 											<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
@@ -784,13 +786,18 @@ export default function LeadTable({ leads }: LeadTableProps) {
 										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.leadStatusDays)}</DataCell>
 										<DataCell centered>
 											<div className="flex items-center justify-center gap-1.5">
-												<ActionLink href={`/employee/crm/leads/${lead.lid}`} label="View">
-													<Eye className="h-3.5 w-3.5" />
+											<ActionLink href={`${linkBase}/${lead.lid}`} label="View">
+												<Eye className="h-3.5 w-3.5" />
+											</ActionLink>
+											{lead.status === "Open" ? (
+												<ActionLink href={`${linkBase}/${lead.lid}`} label="Edit">
+													<Pencil className="h-3.5 w-3.5" />
 												</ActionLink>
-												{lead.status === "Open" ? (
-													<ActionLink href={`/employee/crm/leads/${lead.lid}`} label="Edit">
-														<Pencil className="h-3.5 w-3.5" />
-													</ActionLink>
+											) : null}
+											{onRemove ? (
+												<ActionButton onClick={() => onRemove(lead.lid)} label="Remove">
+													<Trash2 className="h-3.5 w-3.5" />
+												</ActionButton>
 												) : null}
 											</div>
 										</DataCell>
@@ -954,6 +961,20 @@ function ActionLink({ href, label, children }: Readonly<{ href: string; label: s
 	);
 }
 
+function ActionButton({ onClick, label, children }: Readonly<{ onClick: () => void; label: string; children: React.ReactNode }>) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			aria-label={label}
+			title={label}
+			className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+		>
+			{children}
+		</button>
+	);
+}
+
 function FilterSelect({ label, value, options, onChange, className }: Readonly<{ label: string; value: string; options: ReadonlyArray<string>; onChange: (value: string) => void; className?: string }>) {
 	return (
 		<label className={joinClasses("flex flex-col gap-1.5", className)}>
@@ -989,3 +1010,4 @@ function buildPageNumbers(totalPages: number, currentPage: number) {
 function joinClasses(...values: Array<string | undefined>) {
 	return values.filter(Boolean).join(" ");
 }
+
