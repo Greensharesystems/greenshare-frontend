@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Download, Search, X } from "lucide-react";
 
 import { downloadCustomersCsv } from "@/app/services/customers.service";
 import Button from "@/app/components/ui/Button";
-import TableFilters, { DEFAULT_TABLE_SORT_OPTIONS, sortTableRows, type TableSortValue } from "@/app/components/ui/TableFilters";
 import { apiFetch } from "@/app/utils/api";
+
+const MONTH_NAMES = [
+	"January", "February", "March", "April", "May", "June",
+	"July", "August", "September", "October", "November", "December",
+] as const;
 
 type CustomerRecord = Readonly<{
 	customerIdDate: string;
@@ -52,7 +57,8 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isLoading, setIsLoading] = useState(true);
 	const [removingCustomerId, setRemovingCustomerId] = useState<string | null>(null);
-	const [sortValue, setSortValue] = useState<TableSortValue>("date-desc");
+	const [nameSearch, setNameSearch] = useState("");
+	const [regDateFilter, setRegDateFilter] = useState("All");
 
 	useEffect(() => {
 		void loadCustomers();
@@ -116,43 +122,106 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 		}
 	}
 
-	const visibleCustomers = sortTableRows(customers, sortValue, {
-		date: (customer) => customer.customerIdDate,
-		customerName: (customer) => customer.companyName,
-	});
+	const regDateOptions = useMemo(() => {
+		const seen = new Set<string>();
+		for (const customer of customers) {
+			const parts = /^(\d{2})-(\d{2})-(\d{4})$/.exec(customer.customerIdDate);
+			if (parts) {
+				const month = parseInt(parts[2], 10);
+				const year = parseInt(parts[3], 10);
+				seen.add(`${MONTH_NAMES[month - 1]} ${year}`);
+			}
+		}
+		const sorted = Array.from(seen).sort((a, b) => {
+			const [aMonth, aYear] = a.split(" ");
+			const [bMonth, bYear] = b.split(" ");
+			if (aYear !== bYear) return parseInt(aYear, 10) - parseInt(bYear, 10);
+			return MONTH_NAMES.indexOf(aMonth as typeof MONTH_NAMES[number]) - MONTH_NAMES.indexOf(bMonth as typeof MONTH_NAMES[number]);
+		});
+		return ["All", ...sorted];
+	}, [customers]);
+
+	const visibleCustomers = useMemo(() => {
+		const normalizedSearch = nameSearch.trim().toLowerCase();
+		return customers.filter((customer) => {
+			if (normalizedSearch && !customer.companyName.toLowerCase().includes(normalizedSearch)) {
+				return false;
+			}
+			if (regDateFilter !== "All") {
+				const parts = /^(\d{2})-(\d{2})-(\d{4})$/.exec(customer.customerIdDate);
+				if (!parts) return false;
+				const month = parseInt(parts[2], 10);
+				const year = parseInt(parts[3], 10);
+				const label = `${MONTH_NAMES[month - 1]} ${year}`;
+				if (label !== regDateFilter) return false;
+			}
+			return true;
+		});
+	}, [customers, nameSearch, regDateFilter]);
 
 	return (
 		<>
-			<div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-				<TableFilters
-					title="Table Filters"
-					controls={[
-						{
-							key: "sort",
-							type: "select",
-							label: "Sort by",
-							options: DEFAULT_TABLE_SORT_OPTIONS,
-						},
-					]}
-					values={{ sort: sortValue }}
-					onChange={(_, value) => setSortValue(value as TableSortValue)}
-					className="flex-1"
-				/>
+			<div className="flex flex-wrap items-end gap-3">
+				<label className="flex w-64 flex-col gap-1.5">
+					<span className="text-[11px] font-semibold text-slate-500">Customer Name</span>
+					<div className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#36B44D] focus-within:ring-4 focus-within:ring-[#36B44D]/10">
+						<Search className="h-3.5 w-3.5 text-slate-400" />
+						<input
+							type="search"
+							value={nameSearch}
+							onChange={(event) => setNameSearch(event.target.value)}
+							placeholder="Search by customer name"
+							className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
+						/>
+					</div>
+				</label>
+				<label className="flex w-44 flex-col gap-1.5">
+					<span className="text-[11px] font-semibold text-slate-500">Registration Date</span>
+					<select
+						value={regDateFilter}
+						onChange={(event) => setRegDateFilter(event.target.value)}
+						className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
+					>
+						{regDateOptions.map((option) => (
+							<option key={option} value={option}>{option}</option>
+						))}
+					</select>
+				</label>
 				{showEmployeeCsvExport ? (
-					<div className="flex justify-start md:justify-end">
+					<div className="flex items-end gap-2">
 						<Button
 							variant="secondary"
 							size="sm"
-							onClick={() => {
-								void handleDownloadCsv();
-							}}
+							className="min-h-9 rounded-xl px-3 text-[12px]"
+							onClick={() => { void handleDownloadCsv(); }}
 							disabled={isLoading || isDownloadingCsv || visibleCustomers.length === 0}
-							className="min-h-10 rounded-2xl px-4"
 						>
-							{isDownloadingCsv ? "Downloading..." : "Download CSV"}
+							<Download className="h-3.5 w-3.5" />
+							{isDownloadingCsv ? "Downloading..." : "Export"}
+						</Button>
+						<Button
+							variant="secondary"
+							size="sm"
+							className="min-h-9 rounded-xl px-3 text-[12px]"
+							onClick={() => { setNameSearch(""); setRegDateFilter("All"); }}
+						>
+							<X className="h-3.5 w-3.5" />
+							Clear Filters
 						</Button>
 					</div>
-				) : null}
+				) : (
+					<div className="flex items-end gap-2">
+						<Button
+							variant="secondary"
+							size="sm"
+							className="min-h-9 rounded-xl px-3 text-[12px]"
+							onClick={() => { setNameSearch(""); setRegDateFilter("All"); }}
+						>
+							<X className="h-3.5 w-3.5" />
+							Clear Filters
+						</Button>
+					</div>
+				)}
 			</div>
 			{errorMessage ? (
 				<p className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p>
