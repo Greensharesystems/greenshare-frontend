@@ -48,6 +48,7 @@ type LeadTableProps = Readonly<{
 	leads: LeadRecord[];
 	linkBase?: string;
 	onRemove?: (lid: string) => void;
+	showExport?: boolean;
 }>;
 
 type FilterState = Readonly<{
@@ -543,7 +544,7 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 	leadStatusUpdatedDate: addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0),
 }));
 
-export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onRemove }: LeadTableProps) {
+export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onRemove, showExport = false }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(20);
 	const [currentPage, setCurrentPage] = useState(1);
@@ -671,10 +672,12 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Pending", "Sent", "Under Review", "Not Sent", "Other"]} />
 					<FilterSelect className="w-32" label="Lead Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost", "Other"]} />
 					<div className="flex items-end gap-2">
-						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
-							<Download className="h-3.5 w-3.5" />
-							Export
-						</Button>
+						{showExport ? (
+							<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
+								<Download className="h-3.5 w-3.5" />
+								Export
+							</Button>
+						) : null}
 						<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={clearFilters}>
 							<X className="h-3.5 w-3.5" />
 							Clear Filters

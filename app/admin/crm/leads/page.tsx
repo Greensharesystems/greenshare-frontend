@@ -99,6 +99,7 @@ export default function AdminLeadsPage() {
 							leads={leads}
 							linkBase="/admin/crm/leads"
 							onRemove={handleRequestRemove}
+							showExport
 						/>
 					)}
 				</div>
