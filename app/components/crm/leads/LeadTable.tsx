@@ -652,8 +652,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 
 	return (
 		<div className="flex flex-col gap-5">
-			<div className="overflow-x-auto pb-1">
-				<div className="flex min-w-362.5 flex-wrap items-end gap-3">
+			<div className="flex flex-wrap items-end gap-3">
 					<label className="flex w-64 flex-col gap-1.5">
 							<span className="text-[11px] font-semibold text-slate-500">Search</span>
 							<div className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#36B44D] focus-within:ring-4 focus-within:ring-[#36B44D]/10">
@@ -683,10 +682,9 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 							Clear Filters
 						</Button>
 					</div>
-				</div>
-			</div>
+		</div>
 
-			<div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+		<div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
 				<div className="w-full overflow-x-auto">
 					<table className="min-w-362.5 border-collapse text-left text-[12px] text-slate-700">
 						<colgroup>
