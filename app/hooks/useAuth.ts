@@ -21,7 +21,7 @@ const AUTH_EVENT_NAME = "greenshare:auth-changed";
 
 const ROLE_HOME_ROUTES: Record<AuthRole, string> = {
 	admin: "/admin/dashboard",
-	employee: "/employee/dashboard",
+	employee: "/employee/crm/dashboard",
 	customer: "/customer/dashboard",
 };
 

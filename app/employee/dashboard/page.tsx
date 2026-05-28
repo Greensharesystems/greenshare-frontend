@@ -1,5 +1,5 @@
-import DashboardContent from "@/app/components/dashboard/DashboardContent";
+import { redirect } from "next/navigation";
 
 export default function EmployeeDashboardPage() {
-	return <DashboardContent role="employee" titleOverride="Traceability Dashboard" />;
+	redirect("/employee/crm/dashboard");
 }
