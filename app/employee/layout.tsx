@@ -10,10 +10,6 @@ import Header from "@/app/components/layout/Header";
 import Sidebar from "@/app/components/layout/Sidebar";
 import useProtectedModule from "@/app/hooks/useProtectedModule";
 
-const employeeLinks = [
-	{ href: "/employee/customers", label: "Customers" },
-];
-
 const businessGrowthLinks = [
 	{ href: "/employee/crm/dashboard", label: "Dashboard" },
 	{ href: "/employee/crm/leads", label: "Leads" },
@@ -129,7 +125,7 @@ export default function EmployeeLayout({
 				<Sidebar
 					navigation={
 							<nav className="flex w-full flex-col items-center gap-2">
-								{employeeLinks.map(renderNavLink)}
+
 								{renderFlyoutMenu("Growth", businessGrowthLinks)}
 								{renderFlyoutMenu("Traceability", traceabilityLinks)}
 								{renderNavLink({ href: "/employee/gree", label: "Gree" })}
