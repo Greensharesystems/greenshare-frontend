@@ -30,6 +30,11 @@ type ReceptionNoteRecord = Readonly<{
 	producingCompanyContactPerson?: string;
 	producingCompanyOfficePhone?: string;
 	producingCompanyEmail?: string;
+	referringCompany?: string | null;
+	projectName?: string | null;
+	projectNumber?: string | null;
+	projectLocation?: string | null;
+	projectCustomFields?: ReadonlyArray<{ field_title: string; field_value: string }> | null;
 	transportingCompanyName?: string;
 	transportingCompanyContactPerson?: string;
 	transportingCompanyOfficePhone?: string;
@@ -151,6 +156,13 @@ export default function AddReceptionCertficiateForm({
 	const { session } = useAuth();
 	const [receptionNotes, setReceptionNotes] = useState<ReceptionNoteRecord[]>([]);
 	const [linkedRnidDetails, setLinkedRnidDetails] = useState<LinkedRnidDetailsState[]>([blankLinkedRnidDetails(0)]);
+	const [referringCompany, setReferringCompany] = useState("");
+	const [projectName, setProjectName] = useState("");
+	const [projectNumber, setProjectNumber] = useState("");
+	const [projectLocation, setProjectLocation] = useState("");
+	const [projectCustomFields, setProjectCustomFields] = useState<{ id: number; fieldTitle: string; fieldValue: string }[]>([]);
+	const [nextCustomFieldId, setNextCustomFieldId] = useState(0);
+	const [verificationComments, setVerificationComments] = useState("");
 	const [generatedRcid, setGeneratedRcid] = useState("");
 	const [generatedRcidDate, setGeneratedRcidDate] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
@@ -198,8 +210,8 @@ export default function AddReceptionCertficiateForm({
 
 		const matchedReceptionNote = getReceptionNoteByRnid(receptionNotes, nextRnid);
 
-		setLinkedRnidDetails((current) =>
-			current.map((entry) => {
+		setLinkedRnidDetails((current) => {
+			const updated = current.map((entry) => {
 				if (entry.id !== entryId) {
 					return entry;
 				}
@@ -238,8 +250,35 @@ export default function AddReceptionCertficiateForm({
 							? [...matchedReceptionNote.wasteStreams]
 							: [blankWasteStream()],
 				};
-			}),
-		);
+			});
+
+			// Auto-fill project fields when the primary (first) RNID changes
+			const isPrimaryEntry = updated[0]?.id === entryId;
+			if (isPrimaryEntry) {
+				if (matchedReceptionNote) {
+					setReferringCompany(matchedReceptionNote.referringCompany ?? "");
+					setProjectName(matchedReceptionNote.projectName ?? "");
+					setProjectNumber(matchedReceptionNote.projectNumber ?? "");
+					setProjectLocation(matchedReceptionNote.projectLocation ?? "");
+					const importedFields = (matchedReceptionNote.projectCustomFields ?? []).map((field, index) => ({
+						id: index,
+						fieldTitle: field.field_title ?? "",
+						fieldValue: field.field_value ?? "",
+					}));
+					setProjectCustomFields(importedFields);
+					setNextCustomFieldId(importedFields.length);
+				} else {
+					setReferringCompany("");
+					setProjectName("");
+					setProjectNumber("");
+					setProjectLocation("");
+					setProjectCustomFields([]);
+					setNextCustomFieldId(0);
+				}
+			}
+
+			return updated;
+		});
 	}
 
 	function handleAddRnid() {
@@ -258,6 +297,21 @@ export default function AddReceptionCertficiateForm({
 
 			return current.filter((entry) => entry.id !== entryId);
 		});
+	}
+
+	function handleAddCustomField() {
+		setProjectCustomFields((current) => [...current, { id: nextCustomFieldId, fieldTitle: "", fieldValue: "" }]);
+		setNextCustomFieldId((n) => n + 1);
+	}
+
+	function handleRemoveCustomField(fieldId: number) {
+		setProjectCustomFields((current) => current.filter((f) => f.id !== fieldId));
+	}
+
+	function handleCustomFieldChange(fieldId: number, key: "fieldTitle" | "fieldValue", value: string) {
+		setProjectCustomFields((current) =>
+			current.map((f) => (f.id === fieldId ? { ...f, [key]: value } : f)),
+		);
 	}
 
 	async function handleGenerateRcid() {
@@ -327,6 +381,14 @@ export default function AddReceptionCertficiateForm({
 					linkedRnids,
 					customerId: linkedRnidDetails.find((entry) => entry.customerId.trim())?.customerId ?? "",
 					producingCompanyName: producingCompany.companyName,
+					referringCompany: referringCompany.trim() || null,
+					projectName: projectName.trim() || null,
+					projectNumber: projectNumber.trim() || null,
+					projectLocation: projectLocation.trim() || null,
+					projectCustomFields: projectCustomFields.length > 0
+						? projectCustomFields.map((f) => ({ field_title: f.fieldTitle, field_value: f.fieldValue }))
+						: null,
+					verificationComments: verificationComments.trim() || null,
 					wasteStreamQuantity: getWasteStreamQuantitySummary(linkedRnidDetails),
 					rcIssuedBy: issuedBy,
 					status: "Issued",
@@ -424,6 +486,94 @@ export default function AddReceptionCertficiateForm({
 							/>
 						</label>
 					))}
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Referring Company</span>
+						<input
+							type="text"
+							value={referringCompany}
+							onChange={(e) => setReferringCompany(e.target.value)}
+							placeholder="Auto-filled from reception note"
+							className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+				</div>
+			</section>
+
+			<section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+				<div className="flex flex-col gap-1">
+					<p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#36B44D]">Section 2.1</p>
+					<h2 className="text-xl font-light tracking-[-0.04em] text-slate-950">Project Details</h2>
+				</div>
+
+				<div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Project Name</span>
+						<input
+							type="text"
+							value={projectName}
+							onChange={(e) => setProjectName(e.target.value)}
+							placeholder="Auto-filled from reception note"
+							className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Project Number</span>
+						<input
+							type="text"
+							value={projectNumber}
+							onChange={(e) => setProjectNumber(e.target.value)}
+							placeholder="Auto-filled from reception note"
+							className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+					<label className="flex flex-col gap-1.5 md:col-span-2">
+						<span className="text-sm font-medium text-slate-700">Project Location</span>
+						<input
+							type="text"
+							value={projectLocation}
+							onChange={(e) => setProjectLocation(e.target.value)}
+							placeholder="Auto-filled from reception note"
+							className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+				</div>
+
+				{projectCustomFields.length > 0 ? (
+					<div className="flex flex-col gap-3">
+						{projectCustomFields.map((field) => (
+							<div key={field.id} className="flex items-end gap-3">
+								<label className="flex flex-1 flex-col gap-1.5">
+									<span className="text-sm font-medium text-slate-700">Field Title</span>
+									<input
+										type="text"
+										value={field.fieldTitle}
+										onChange={(e) => handleCustomFieldChange(field.id, "fieldTitle", e.target.value)}
+										placeholder="e.g. PO Number"
+										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+									/>
+								</label>
+								<label className="flex flex-1 flex-col gap-1.5">
+									<span className="text-sm font-medium text-slate-700">Field Value</span>
+									<input
+										type="text"
+										value={field.fieldValue}
+										onChange={(e) => handleCustomFieldChange(field.id, "fieldValue", e.target.value)}
+										placeholder="e.g. PO-123"
+										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+									/>
+								</label>
+								<Button type="button" variant="danger" size="sm" className="mb-0.5 min-h-6 rounded-lg px-1.5 py-0.5 text-[11px]" onClick={() => handleRemoveCustomField(field.id)}>
+									Remove
+								</Button>
+							</div>
+						))}
+					</div>
+				) : null}
+
+				<div>
+					<Button type="button" variant="secondary" onClick={handleAddCustomField}>
+						+ Add Custom Field
+					</Button>
 				</div>
 			</section>
 
@@ -586,6 +736,17 @@ export default function AddReceptionCertficiateForm({
 						<input type="text" value="CEO" readOnly className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20" />
 					</label>
 				</div>
+
+				<label className="flex flex-col gap-1.5">
+					<span className="text-sm font-medium text-slate-700">Comments</span>
+					<textarea
+						value={verificationComments}
+						onChange={(e) => setVerificationComments(e.target.value)}
+						rows={4}
+						placeholder="Optional verification comments..."
+						className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+					/>
+				</label>
 			</section>
 
 			<section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

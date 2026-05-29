@@ -14,7 +14,7 @@ export default function CustomerCertificatesPage() {
 		{
 			label: "Reception Certificates",
 			value: "reception-certificates",
-			content: <ReceptionCertificateTable permissions={{ canRemove: false }} sortOptions={DATE_ONLY_TABLE_SORT_OPTIONS} />,
+			content: <ReceptionCertificateTable permissions={{ canRemove: false }} />,
 		},
 		{
 			label: "Circularity Certificates",
