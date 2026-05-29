@@ -457,110 +457,103 @@ Clear Filters
 ) : null}
 
 <div className="w-full overflow-x-auto">
-<table className="min-w-full border-collapse text-left text-xs text-slate-700">
-<thead className="border-b border-slate-200 bg-slate-50 text-xs tracking-[0.16em] text-slate-500">
-<tr>
-<th rowSpan={2} className="px-3 py-2.5 font-semibold align-middle">RNID Date</th>
-<th rowSpan={2} className="px-3 py-2.5 font-semibold align-middle">RNID</th>
-<th colSpan={3} className="border-b border-slate-200 px-3 py-2 text-center font-semibold">Customer Name</th>
-<th colSpan={3} className="border-b border-slate-200 px-3 py-2 text-center font-semibold">Waste Stream Details</th>
-<th rowSpan={2} className="px-3 py-2.5 font-semibold align-middle">RN Status</th>
-<th rowSpan={2} className="px-3 py-2.5 font-semibold align-middle">Issued By</th>
-<th rowSpan={2} className="px-3 py-2.5 font-semibold align-middle whitespace-nowrap">Reception Certificate</th>
-<th rowSpan={2} className="px-3 py-2.5 font-semibold align-middle">Actions</th>
-</tr>
-<tr>
-<th className="px-3 py-2 font-semibold">Producing Company</th>
-<th className="px-3 py-2 font-semibold">Referring Company</th>
-<th className="px-3 py-2 font-semibold">Project Name</th>
-<th className="px-3 py-2 font-semibold">Name</th>
-<th className="px-3 py-2 font-semibold">Class</th>
-<th className="px-3 py-2 font-semibold whitespace-nowrap">Quantity Unit</th>
-</tr>
-</thead>
-<tbody>
-{isLoading ? (
-<tr>
-<td colSpan={TOTAL_COLUMNS} className="px-3 py-6 text-center text-slate-500">
-Loading reception notes...
-</td>
-</tr>
-) : visibleRows.length === 0 ? (
-<tr>
-<td colSpan={TOTAL_COLUMNS} className="px-3 py-6 text-center text-slate-500">
-No data available.
-</td>
-</tr>
-) : visibleRows.map((row) => {
-const normalizedRnid = row.rnid.trim();
-const isRowBusy = activeActionKey === `view:${normalizedRnid}` || activeActionKey === `download:${normalizedRnid}`;
-return (
-<tr key={row.rnid} className="border-b border-slate-200 last:border-b-0">
-<td className="px-3 py-2.5 text-slate-600">{row.rnidDate || "N/A"}</td>
-<td className="px-3 py-2.5 font-medium text-slate-900">{row.rnid || "N/A"}</td>
-<td className="px-3 py-2.5 text-slate-600">{row.producingCompanyName || "N/A"}</td>
-<td className="px-3 py-2.5 text-slate-600">{row.referringCompany || "N/A"}</td>
-<td className="px-3 py-2.5 text-slate-600">{row.projectName || "N/A"}</td>
-<td className="px-3 py-2.5 text-slate-600">{getPrimaryWasteStreamName(row) || "N/A"}</td>
-<td className="px-3 py-2.5 text-slate-600">{getPrimaryWasteStreamClass(row) || "N/A"}</td>
-<td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">{getPrimaryWasteStreamQuantityUnit(row) || "N/A"}</td>
-<td className="px-3 py-2.5">
-<StatusBadge status={row.status === "Issued" ? "Issued" : "Pending"} />
-</td>
-<td className="px-3 py-2.5 text-slate-600">{row.rnIssuedBy || "N/A"}</td>
-<td className="px-3 py-2.5">
-{renderReceptionCertificateCell(row.receptionCertificateReference, handleViewReceptionCertificate)}
-</td>
-<td className="px-3 py-2.5">
-<div className="flex items-center gap-1.5">
-<button
-type="button"
-title={activeActionKey === `view:${normalizedRnid}` ? "Generating PDF..." : "View"}
-disabled={isLoading || isRowBusy}
-onClick={() => void handleViewReceptionNote(row)}
-className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
->
-<Eye className="h-3.5 w-3.5" />
-</button>
-<button
-type="button"
-title={activeActionKey === `download:${normalizedRnid}` ? "Generating PDF..." : "Download"}
-disabled={isLoading || isRowBusy}
-onClick={() => void handleDownloadReceptionNote(row)}
-className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
->
-<Download className="h-3.5 w-3.5" />
-</button>
-{(role === "admin" || role === "employee") ? (
-<button
-type="button"
-title="Edit"
-disabled={isLoading}
-onClick={() => handleEditReceptionNote(row)}
-className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
->
-<Pencil className="h-3.5 w-3.5" />
-</button>
-) : null}
-{role === "admin" ? (
-<button
-type="button"
-title="Remove"
-disabled={isLoading || isRowBusy}
-onClick={() => setConfirmRemoveRnid(normalizedRnid)}
-className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-500 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
->
-<Trash2 className="h-3.5 w-3.5" />
-</button>
-) : null}
-</div>
-</td>
-</tr>
-);
-})}
-</tbody>
-</table>
-</div>
+				<table className="min-w-full border-collapse text-left text-xs text-slate-700">
+					<thead className="sticky top-0 z-10 bg-slate-50">
+						<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+							<HeaderCell rowSpan={2} label="RNID Date" />
+							<HeaderCell rowSpan={2} label="RNID" />
+							<GroupHeader label="Customer Name" colSpan={3} />
+							<GroupHeader label="Waste Stream Details" colSpan={3} />
+							<HeaderCell rowSpan={2} label="RN Status" />
+							<HeaderCell rowSpan={2} label="Issued By" />
+							<HeaderCell rowSpan={2} label="Reception Certificate" />
+							<HeaderCell rowSpan={2} label="Actions" centered />
+						</tr>
+						<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+							<HeaderCell label="Producing Company" />
+							<HeaderCell label="Referring Company" />
+							<HeaderCell label="Project Name" />
+							<HeaderCell label="Name" />
+							<HeaderCell label="Class" />
+							<HeaderCell label="Qty Unit" />
+						</tr>
+					</thead>
+					<tbody>
+						{isLoading ? (
+							<tr>
+								<td colSpan={TOTAL_COLUMNS} className="px-3 py-6 text-center text-slate-500">
+									Loading reception notes...
+								</td>
+							</tr>
+						) : visibleRows.length === 0 ? (
+							<tr>
+								<td colSpan={TOTAL_COLUMNS} className="px-3 py-6 text-center text-slate-500">
+									No data available.
+								</td>
+							</tr>
+						) : visibleRows.map((row) => {
+							const normalizedRnid = row.rnid.trim();
+							const isRowBusy = activeActionKey === `view:${normalizedRnid}` || activeActionKey === `download:${normalizedRnid}`;
+							return (
+								<tr key={row.rnid} className="bg-white transition hover:bg-slate-50/80">
+									<DataCell>{row.rnidDate || "N/A"}</DataCell>
+									<DataCell className="font-medium text-slate-900">{row.rnid || "N/A"}</DataCell>
+									<DataCell>{row.producingCompanyName || "N/A"}</DataCell>
+									<DataCell>{row.referringCompany || "N/A"}</DataCell>
+									<DataCell>{row.projectName || "N/A"}</DataCell>
+									<DataCell>{getPrimaryWasteStreamName(row) || "N/A"}</DataCell>
+									<DataCell>{getPrimaryWasteStreamClass(row) || "N/A"}</DataCell>
+									<DataCell>{getPrimaryWasteStreamQuantityUnit(row) || "N/A"}</DataCell>
+									<DataCell>
+										<StatusBadge status={row.status === "Issued" ? "Issued" : "Pending"} />
+									</DataCell>
+									<DataCell>{row.rnIssuedBy || "N/A"}</DataCell>
+									<DataCell>
+										{renderReceptionCertificateCell(row.receptionCertificateReference, handleViewReceptionCertificate)}
+									</DataCell>
+									<DataCell centered>
+										<div className="flex items-center justify-center gap-1">
+											<ActionButton
+												label={activeActionKey === `view:${normalizedRnid}` ? "Generating PDF..." : "View"}
+												onClick={() => void handleViewReceptionNote(row)}
+												disabled={isLoading || isRowBusy}
+											>
+												<Eye className="h-3.5 w-3.5" />
+											</ActionButton>
+											<ActionButton
+												label={activeActionKey === `download:${normalizedRnid}` ? "Generating PDF..." : "Download"}
+												onClick={() => void handleDownloadReceptionNote(row)}
+												disabled={isLoading || isRowBusy}
+											>
+												<Download className="h-3.5 w-3.5" />
+											</ActionButton>
+											{(role === "admin" || role === "employee") ? (
+												<ActionButton
+													label="Edit"
+													onClick={() => handleEditReceptionNote(row)}
+													disabled={isLoading}
+												>
+													<Pencil className="h-3.5 w-3.5" />
+												</ActionButton>
+											) : null}
+											{role === "admin" ? (
+												<ActionButton
+													label="Remove"
+													danger
+													onClick={() => setConfirmRemoveRnid(normalizedRnid)}
+													disabled={isLoading || isRowBusy}
+												>
+													<Trash2 className="h-3.5 w-3.5" />
+												</ActionButton>
+											) : null}
+										</div>
+									</DataCell>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+			</div>
 </div>
 </>
 );
@@ -637,4 +630,78 @@ className="inline-flex items-center rounded-full border border-emerald-200 bg-em
 {reference}
 </button>
 );
+}
+function HeaderCell({
+	label,
+	rowSpan,
+	centered = false,
+}: Readonly<{ label: string; rowSpan?: number; centered?: boolean }>) {
+	return (
+		<th
+			rowSpan={rowSpan}
+			className={`border-b border-r border-slate-200 bg-slate-50 px-2 py-2 align-middle text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 whitespace-nowrap last:border-r-0${
+				centered ? " text-center" : " text-left"
+			}`}
+		>
+			{label}
+		</th>
+	);
+}
+
+function GroupHeader({ label, colSpan }: Readonly<{ label: string; colSpan: number }>) {
+	return (
+		<th
+			colSpan={colSpan}
+			className="border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0"
+		>
+			{label}
+		</th>
+	);
+}
+
+function DataCell({
+	children,
+	centered = false,
+	className,
+}: Readonly<{ children: React.ReactNode; centered?: boolean; className?: string }>) {
+	return (
+		<td
+			className={`border-b border-r border-slate-200 px-2 py-2 align-middle text-[12px] whitespace-nowrap text-slate-700 last:border-r-0${
+				centered ? " text-center" : ""
+			}${className ? ` ${className}` : ""}`}
+		>
+			{children}
+		</td>
+	);
+}
+
+function ActionButton({
+	children,
+	label,
+	danger = false,
+	onClick,
+	disabled = false,
+}: Readonly<{
+	children: React.ReactNode;
+	label: string;
+	danger?: boolean;
+	onClick: () => void;
+	disabled?: boolean;
+}>) {
+	return (
+		<button
+			type="button"
+			aria-label={label}
+			title={label}
+			disabled={disabled}
+			onClick={onClick}
+			className={`inline-flex h-6 w-6 items-center justify-center rounded-lg transition disabled:opacity-40${
+				danger
+					? " text-rose-500 hover:bg-rose-50 hover:text-rose-700"
+					: " text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+			}`}
+		>
+			{children}
+		</button>
+	);
 }
