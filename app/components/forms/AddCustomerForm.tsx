@@ -32,6 +32,7 @@ type CustomerRecord = {
 	area: string;
 	officeAddress: string;
 	website: string;
+	companyEmail?: string;
 	sector: string;
 	focalPersons?: FocalPersonFormValue[];
 };
@@ -42,6 +43,7 @@ type CompanyFormState = {
 	area: string;
 	officeLocation: string;
 	website: string;
+	companyEmail: string;
 	sector: string;
 };
 
@@ -51,6 +53,7 @@ const companyFields = [
 	{ id: "area", label: "Area", type: "text", placeholder: "Enter area" },
 	{ id: "officeLocation", label: "Office Location", type: "text", placeholder: "Enter office location" },
 	{ id: "website", label: "Website", type: "text", placeholder: "Enter website" },
+	{ id: "companyEmail", label: "Email", type: "email", placeholder: "Enter company email" },
 	{ id: "sector", label: "Sector", type: "text", placeholder: "Enter sector" },
 ] as const;
 
@@ -111,6 +114,7 @@ export default function AddCustomerForm({ submitLabel = "Add Customer", mode = "
 					area: String(payload.area ?? ""),
 					officeLocation: String(payload.officeAddress ?? ""),
 					website: String(payload.website ?? ""),
+					companyEmail: String(payload.companyEmail ?? ""),
 					sector: String(payload.sector ?? ""),
 				});
 				setFocalPersons(
@@ -239,8 +243,7 @@ export default function AddCustomerForm({ submitLabel = "Add Customer", mode = "
 					emirate: companyForm.emirate.trim(),
 					area: companyForm.area.trim(),
 					officeLocation: companyForm.officeLocation.trim(),
-					website: companyForm.website.trim(),
-					sector: companyForm.sector.trim(),
+					website: companyForm.website.trim(),				companyEmail: companyForm.companyEmail.trim() || null,					sector: companyForm.sector.trim(),
 					focalPersons: normalizedFocalPersons,
 				}),
 			});
@@ -283,11 +286,11 @@ export default function AddCustomerForm({ submitLabel = "Add Customer", mode = "
 								id={field.id}
 								name={field.id}
 								type={field.type}
-								required
+								required={field.id !== "companyEmail"}
 								value={companyForm[field.id]}
 								onChange={handleCompanyFieldChange}
 								inputMode={field.id === "website" ? "url" : undefined}
-								pattern={field.id === "website" ? "^(www\.)?[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$" : undefined}
+								pattern={field.id === "website" ? "^(www\\.)?[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$" : undefined}
 								title={field.id === "website" ? "Enter a website like co1.com or www.co1.com" : undefined}
 								placeholder={field.placeholder}
 								className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
@@ -406,6 +409,7 @@ function createEmptyCompanyForm(): CompanyFormState {
 		area: "",
 		officeLocation: "",
 		website: "",
+		companyEmail: "",
 		sector: "",
 	};
 }
