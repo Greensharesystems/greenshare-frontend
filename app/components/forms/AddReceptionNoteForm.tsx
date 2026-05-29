@@ -66,6 +66,12 @@ export default function AddReceptionNoteForm({
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isGeneratingRnid, setIsGeneratingRnid] = useState(false);
+	const [referringCompany, setReferringCompany] = useState("");
+	const [projectName, setProjectName] = useState("");
+	const [projectNumber, setProjectNumber] = useState("");
+	const [projectLocation, setProjectLocation] = useState("");
+	const [customProjectFields, setCustomProjectFields] = useState<Array<{ id: number; title: string; inputValue: string }>>([]);
+	const [nextCustomFieldId, setNextCustomFieldId] = useState(0);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -243,8 +249,13 @@ export default function AddReceptionNoteForm({
 					producingCompanyOfficeAddress: producingCompany.officeAddress,
 					producingCompanyContactPerson: producingCompany.contactPerson,
 					producingCompanyOfficePhone: producingCompany.officePhone,
-					producingCompanyEmail: producingCompany.email,
-					transportingCompanyName: String(formData.get("transportingCompanyName") ?? "").trim(),
+					producingCompanyEmail: producingCompany.email,						referringCompany: referringCompany.trim() || null,
+						projectName: projectName.trim() || null,
+						projectNumber: projectNumber.trim() || null,
+						projectLocation: projectLocation.trim() || null,
+						projectCustomFields: customProjectFields
+							.filter((f) => f.title.trim() || f.inputValue.trim())
+							.map((f) => ({ field_title: f.title.trim(), field_value: f.inputValue.trim() })),					transportingCompanyName: String(formData.get("transportingCompanyName") ?? "").trim(),
 					transportingCompanyContactPerson: String(formData.get("transportingCompanyContactPerson") ?? "").trim(),
 					transportingCompanyOfficePhone: String(formData.get("transportingCompanyOfficePhone") ?? "").trim(),
 					transportingCompanyEmail: String(formData.get("transportingCompanyEmail") ?? "").trim(),
@@ -319,6 +330,19 @@ export default function AddReceptionNoteForm({
 		hiddenDateInput.click();
 	}
 
+	function handleAddCustomProjectField() {
+		setCustomProjectFields((prev) => [...prev, { id: nextCustomFieldId, title: "", inputValue: "" }]);
+		setNextCustomFieldId((prev) => prev + 1);
+	}
+
+	function handleRemoveCustomProjectField(fieldId: number) {
+		setCustomProjectFields((prev) => prev.filter((f) => f.id !== fieldId));
+	}
+
+	function handleCustomProjectFieldChange(fieldId: number, key: "title" | "inputValue", value: string) {
+		setCustomProjectFields((prev) => prev.map((f) => f.id === fieldId ? { ...f, [key]: value } : f));
+	}
+
 	return (
 		<form className="flex w-full max-w-4xl flex-col gap-5 p-6" onSubmit={handleSubmit}>
 			{errorMessage ? (
@@ -367,6 +391,107 @@ export default function AddReceptionNoteForm({
 							/>
 						</label>
 					))}
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Referring Company</span>
+						<input
+							id="referringCompany"
+							name="referringCompany"
+							type="text"
+							value={referringCompany}
+							onChange={(e) => setReferringCompany(e.target.value)}
+							placeholder="Enter referring company"
+							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+				</div>
+			</section>
+
+			<section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+				<div className="flex flex-col gap-1">
+					<p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#36B44D]">Section 2.1</p>
+					<h2 className="text-xl font-light tracking-[-0.04em] text-slate-950">Project Details</h2>
+				</div>
+
+				<div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Project Name</span>
+						<input
+							id="projectName"
+							name="projectName"
+							type="text"
+							value={projectName}
+							onChange={(e) => setProjectName(e.target.value)}
+							placeholder="Enter project name"
+							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Project Number</span>
+						<input
+							id="projectNumber"
+							name="projectNumber"
+							type="text"
+							value={projectNumber}
+							onChange={(e) => setProjectNumber(e.target.value)}
+							placeholder="Enter project number"
+							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+					<label className="flex flex-col gap-1.5 md:col-span-2">
+						<span className="text-sm font-medium text-slate-700">Project Location</span>
+						<input
+							id="projectLocation"
+							name="projectLocation"
+							type="text"
+							value={projectLocation}
+							onChange={(e) => setProjectLocation(e.target.value)}
+							placeholder="Enter project location"
+							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+				</div>
+
+				{customProjectFields.length > 0 ? (
+					<div className="flex flex-col gap-3">
+						{customProjectFields.map((field) => (
+							<div key={field.id} className="flex items-end gap-3">
+								<label className="flex flex-1 flex-col gap-1.5">
+									<span className="text-sm font-medium text-slate-700">Field Title</span>
+									<input
+										type="text"
+										value={field.title}
+										onChange={(e) => handleCustomProjectFieldChange(field.id, "title", e.target.value)}
+										placeholder="e.g. PO Number"
+										className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+									/>
+								</label>
+								<label className="flex flex-1 flex-col gap-1.5">
+									<span className="text-sm font-medium text-slate-700">Field Input</span>
+									<input
+										type="text"
+										value={field.inputValue}
+										onChange={(e) => handleCustomProjectFieldChange(field.id, "inputValue", e.target.value)}
+										placeholder="Enter value"
+										className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+									/>
+								</label>
+								<button
+									type="button"
+									onClick={() => handleRemoveCustomProjectField(field.id)}
+									className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-500 transition hover:bg-rose-100"
+									aria-label="Remove field"
+								>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
+								</button>
+							</div>
+						))}
+					</div>
+				) : null}
+
+				<div>
+					<Button type="button" variant="secondary" onClick={handleAddCustomProjectField}>
+						+ Add a Field
+					</Button>
 				</div>
 			</section>
 
