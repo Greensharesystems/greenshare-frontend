@@ -30,6 +30,11 @@ type ReceptionNoteRecord = Readonly<{
 	producingCompanyContactPerson?: string;
 	producingCompanyOfficePhone?: string;
 	producingCompanyEmail?: string;
+	referringCompany?: string | null;
+	projectName?: string | null;
+	projectNumber?: string | null;
+	projectLocation?: string | null;
+	projectCustomFields?: ReadonlyArray<{ field_title: string; field_value: string }> | null;
 	transportingCompanyName?: string;
 	transportingCompanyContactPerson?: string;
 	transportingCompanyOfficePhone?: string;
@@ -208,6 +213,12 @@ export default function AddCircularityCertificateForm({
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isGeneratingCcid, setIsGeneratingCcid] = useState(false);
+	const [referringCompany, setReferringCompany] = useState("");
+	const [projectName, setProjectName] = useState("");
+	const [projectNumber, setProjectNumber] = useState("");
+	const [projectLocation, setProjectLocation] = useState("");
+	const [projectCustomFields, setProjectCustomFields] = useState<Array<{ field_title: string; field_value: string }>>([])
+	const [verificationComments, setVerificationComments] = useState("");
 	const issuedBy = session?.role === "employee" ? session.displayName : "";
 
 	useEffect(() => {
@@ -288,6 +299,25 @@ export default function AddCircularityCertificateForm({
 			.map((rnid) => getReceptionNoteByRnid(receptionNotes, rnid))
 			.filter((note): note is ReceptionNoteRecord => note !== null);
 		const matchedReceptionNote = linkedNotes[0] ?? null;
+
+		// Auto-populate project fields from the first linked reception note
+		if (matchedReceptionNote) {
+			setReferringCompany(matchedReceptionNote.referringCompany ?? "");
+			setProjectName(matchedReceptionNote.projectName ?? "");
+			setProjectNumber(matchedReceptionNote.projectNumber ?? "");
+			setProjectLocation(matchedReceptionNote.projectLocation ?? "");
+			setProjectCustomFields(
+				matchedReceptionNote.projectCustomFields
+					? matchedReceptionNote.projectCustomFields.map((f) => ({ field_title: f.field_title, field_value: f.field_value }))
+					: [],
+			);
+		} else if (!nextRcid.trim()) {
+			setReferringCompany("");
+			setProjectName("");
+			setProjectNumber("");
+			setProjectLocation("");
+			setProjectCustomFields([]);
+		}
 
 		setLinkedRcidDetails((current) =>
 			current.map((entry) => {
@@ -485,11 +515,17 @@ export default function AddCircularityCertificateForm({
 					linkedRcids,
 					cid,
 					producingCompanyName: producingCompany.companyName,
+					referringCompany: referringCompany || null,
+					projectName: projectName || null,
+					projectNumber: projectNumber || null,
+					projectLocation: projectLocation || null,
+					projectCustomFields: projectCustomFields.length > 0 ? projectCustomFields : null,
 					wasteStreamQuantity: joinUniqueValues(linkedRcidDetails.map((entry) => entry.wasteStream.quantity)),
 					secondaryProduct: secondarySummary.secondaryProduct,
 					secondaryLoop: secondarySummary.secondaryLoop,
 					secondaryEcosystemDetails,
 					issuedBy,
+					verificationComments: verificationComments || null,
 					status: "Issued",
 				}),
 			});
@@ -657,6 +693,76 @@ export default function AddCircularityCertificateForm({
 							/>
 						</label>
 					))}
+					<label className="flex flex-col gap-1.5 md:col-span-2">
+						<span className="text-sm font-medium text-slate-700">Referring Company</span>
+						<input
+							type="text"
+							value={referringCompany}
+							readOnly
+							placeholder="Auto-filled from reception note"
+							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+						/>
+					</label>
+				</div>
+			</section>
+
+			<section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+				<div className="flex flex-col gap-1">
+					<p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#36B44D]">Section 2.1</p>
+					<h2 className="text-xl font-light tracking-[-0.04em] text-slate-950">Project Details</h2>
+				</div>
+				<div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Project Name</span>
+						<input type="text" value={projectName} readOnly placeholder="Auto-filled from reception note" className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20" />
+					</label>
+					<label className="flex flex-col gap-1.5">
+						<span className="text-sm font-medium text-slate-700">Project Number</span>
+						<input type="text" value={projectNumber} readOnly placeholder="Auto-filled from reception note" className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20" />
+					</label>
+					<label className="flex flex-col gap-1.5 md:col-span-2">
+						<span className="text-sm font-medium text-slate-700">Project Location</span>
+						<input type="text" value={projectLocation} readOnly placeholder="Auto-filled from reception note" className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20" />
+					</label>
+				</div>
+
+				{projectCustomFields.length > 0 ? (
+					<div className="flex flex-col gap-3">
+						<p className="text-sm font-medium text-slate-700">Custom Fields</p>
+						{projectCustomFields.map((field, index) => (
+							<div key={index} className="grid grid-cols-1 items-end gap-3 md:grid-cols-[1fr_1fr_auto]">
+								<label className="flex flex-col gap-1.5">
+									<span className="text-sm font-medium text-slate-700">Field Title</span>
+									<input
+										type="text"
+										value={field.field_title}
+										onChange={(e) => setProjectCustomFields((current) => current.map((f, i) => i === index ? { ...f, field_title: e.target.value } : f))}
+										placeholder="Field title"
+										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+									/>
+								</label>
+								<label className="flex flex-col gap-1.5">
+									<span className="text-sm font-medium text-slate-700">Value</span>
+									<input
+										type="text"
+										value={field.field_value}
+										onChange={(e) => setProjectCustomFields((current) => current.map((f, i) => i === index ? { ...f, field_value: e.target.value } : f))}
+										placeholder="Field value"
+										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
+									/>
+								</label>
+								<Button type="button" variant="danger" size="sm" className="min-h-10 rounded-2xl px-3" onClick={() => setProjectCustomFields((current) => current.filter((_, i) => i !== index))}>
+									Remove
+								</Button>
+							</div>
+						))}
+					</div>
+				) : null}
+
+				<div>
+					<Button type="button" variant="secondary" onClick={() => setProjectCustomFields((current) => [...current, { field_title: "", field_value: "" }])}>
+						+ Add a Field
+					</Button>
 				</div>
 			</section>
 
@@ -863,6 +969,16 @@ export default function AddCircularityCertificateForm({
 						<input type="text" value="CEO" readOnly className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20" />
 					</label>
 				</div>
+				<label className="flex flex-col gap-1.5">
+					<span className="text-sm font-medium text-slate-700">Comments</span>
+					<textarea
+						value={verificationComments}
+						onChange={(e) => setVerificationComments(e.target.value)}
+						rows={3}
+						placeholder="Optional verification comments..."
+						className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20 resize-none"
+					/>
+				</label>
 			</section>
 
 			<section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

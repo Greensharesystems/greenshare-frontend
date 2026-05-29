@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import CircularityCertificateTable from "@/app/components/tables/CircularityCertificateTable";
 import ReceptionCertificateTable from "@/app/components/tables/ReceptionCertificateTable";
-import { DATE_ONLY_TABLE_SORT_OPTIONS } from "@/app/components/ui/TableFilters";
 import Tab, { type TabItem } from "@/app/components/ui/Tab";
 
 export default function CustomerCertificatesPage() {
@@ -19,7 +18,7 @@ export default function CustomerCertificatesPage() {
 		{
 			label: "Circularity Certificates",
 			value: "circularity-certificates",
-			content: <CircularityCertificateTable permissions={{ canRemove: false }} sortOptions={DATE_ONLY_TABLE_SORT_OPTIONS} />,
+			content: <CircularityCertificateTable permissions={{ canRemove: false }} />,
 		},
 	];
 
