@@ -183,6 +183,18 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 
 			{/* Filters */}
 			<div className="flex flex-wrap items-end gap-3">
+				<label className="flex w-44 flex-col gap-1.5">
+					<span className="text-[11px] font-semibold text-slate-500">CID Date</span>
+					<select
+						value={regDateFilter}
+						onChange={(event) => setRegDateFilter(event.target.value)}
+						className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
+					>
+						{regDateOptions.map((option) => (
+							<option key={option} value={option}>{option}</option>
+						))}
+					</select>
+				</label>
 				<label className="flex w-64 flex-col gap-1.5">
 					<span className="text-[11px] font-semibold text-slate-500">Customer Name</span>
 					<div className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#36B44D] focus-within:ring-4 focus-within:ring-[#36B44D]/10">
@@ -195,18 +207,6 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 							className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
 						/>
 					</div>
-				</label>
-				<label className="flex w-44 flex-col gap-1.5">
-					<span className="text-[11px] font-semibold text-slate-500">Registration Date</span>
-					<select
-						value={regDateFilter}
-						onChange={(event) => setRegDateFilter(event.target.value)}
-						className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
-					>
-						{regDateOptions.map((option) => (
-							<option key={option} value={option}>{option}</option>
-						))}
-					</select>
 				</label>
 				<div className="flex items-end gap-2">
 					{showEmployeeCsvExport ? (
