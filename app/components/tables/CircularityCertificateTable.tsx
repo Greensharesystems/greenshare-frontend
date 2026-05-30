@@ -34,7 +34,7 @@ type CircularityCertificateTableProps = Readonly<{
 	permissions?: CertificateTablePermissions;
 }>;
 
-const TOTAL_COLUMNS = 13;
+const TOTAL_COLUMNS = 12;
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const;
 
 export default function CircularityCertificateTable({
@@ -245,7 +245,7 @@ export default function CircularityCertificateTable({
 			const headers = [
 				"CCID Date", "CCID", "Linked RCIDs", "Producing Company", "Referring Company",
 				"Project Name", "Waste Stream Name", "Class", "Quantity Unit",
-				"CC Status", "Issued By", "Circularity Certificate Status",
+				"CC Status", "Issued By",
 			];
 			const csvData = filteredRows.map((row) => [
 				row.ccidDate,
@@ -259,7 +259,6 @@ export default function CircularityCertificateTable({
 				row.wasteStreamQuantity,
 				row.status === "Issued" ? "Issued" : "Pending",
 				row.ccIssuedBy,
-				row.status === "Issued" ? "Issued" : "Pending",
 			]);
 			const csvContent = [headers, ...csvData]
 				.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -389,7 +388,6 @@ export default function CircularityCertificateTable({
 								<GroupHeader label="Waste Stream Details" colSpan={3} />
 								<HeaderCell rowSpan={2} label="CC Status" />
 								<HeaderCell rowSpan={2} label="Issued By" />
-								<HeaderCell rowSpan={2} label="Circularity Certificate Status" />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
@@ -432,9 +430,6 @@ export default function CircularityCertificateTable({
 											<StatusBadge status={row.status === "Issued" ? "Issued" : "Pending"} />
 										</DataCell>
 										<DataCell className="whitespace-nowrap">{row.ccIssuedBy || "N/A"}</DataCell>
-										<DataCell className="whitespace-nowrap">
-											<StatusBadge status={row.status === "Issued" ? "Issued" : "Pending"} />
-										</DataCell>
 										<DataCell centered className="whitespace-nowrap">
 											<div className="flex items-center justify-center gap-1">
 												<ActionButton
