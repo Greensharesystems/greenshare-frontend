@@ -684,7 +684,6 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 					</div>
 		</div>
 
-		<div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white">
 				<div className="w-full overflow-x-auto">
 					<table className="min-w-362.5 border-collapse text-left text-[12px] text-slate-700">
 						<colgroup>
@@ -850,7 +849,6 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 						</div>
 					</div>
 				</div>
-			</div>
 		</div>
 	);
 }
