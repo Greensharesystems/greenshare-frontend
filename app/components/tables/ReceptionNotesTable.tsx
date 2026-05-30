@@ -475,7 +475,7 @@ Clear Filters
 							<GroupHeader label="Waste Stream Details" colSpan={3} />
 							<HeaderCell rowSpan={2} label="RN Status" />
 							<HeaderCell rowSpan={2} label="Issued By" />
-							<HeaderCell rowSpan={2} label="Reception Certificate" />
+							<HeaderCell rowSpan={2} label={<><span>Reception</span><br /><span>Certificate</span></>} />
 							<HeaderCell rowSpan={2} label="Actions" centered />
 						</tr>
 						<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
@@ -690,7 +690,7 @@ function HeaderCell({
 	label,
 	rowSpan,
 	centered = false,
-}: Readonly<{ label: string; rowSpan?: number; centered?: boolean }>) {
+}: Readonly<{ label: React.ReactNode; rowSpan?: number; centered?: boolean }>) {
 	return (
 		<th
 			rowSpan={rowSpan}
