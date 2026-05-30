@@ -55,6 +55,7 @@ status: "Issued" | "Pending" | "Draft";
 }>;
 
 const TOTAL_COLUMNS = 12;
+const PAGE_SIZE_OPTIONS = [5, 10, 20] as const;
 
 export default function ReceptionNotesTable() {
 const router = useRouter();
@@ -71,6 +72,8 @@ const [confirmRemoveRnid, setConfirmRemoveRnid] = useState<string | null>(null);
 const [rnidDateFilter, setRnidDateFilter] = useState("All");
 const [rnidSearch, setRnidSearch] = useState("");
 const [nameSearch, setNameSearch] = useState("");
+const [pageSize, setPageSize] = useState<number>(10);
+const [currentPage, setCurrentPage] = useState(0);
 
 const rnidDateOptions = useMemo(() => {
 const optionMap = new Map<string, number>();
@@ -90,7 +93,7 @@ const sorted = [...optionMap.entries()]
 return ["All", ...sorted];
 }, [rows]);
 
-const visibleRows = useMemo(() => {
+const filteredRows = useMemo(() => {
 return rows.filter((row) => {
 if (rnidDateFilter !== "All") {
 if (toMonthYearOption(row.rnidDate) !== rnidDateFilter) return false;
@@ -108,6 +111,12 @@ if (!matchesName) return false;
 return true;
 });
 }, [rows, rnidDateFilter, rnidSearch, nameSearch]);
+
+const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+const safePage = Math.min(currentPage, totalPages - 1);
+const pageStart = safePage * pageSize;
+const pageEnd = Math.min(pageStart + pageSize, filteredRows.length);
+const pagedRows = filteredRows.slice(pageStart, pageEnd);
 
 async function loadReceptionNotes() {
 setErrorMessage("");
@@ -331,7 +340,7 @@ const headers = [
 "Waste Stream Name", "Class", "Quantity Unit", "RN Status", "Issued By",
 "Reception Certificate Status",
 ];
-const csvData = visibleRows.map((row) => [
+const csvData = filteredRows.map((row) => [
 row.rnidDate,
 row.rnid,
 row.producingCompanyName,
@@ -395,7 +404,7 @@ Remove
 <span className="text-[11px] font-semibold text-slate-500">RNID Date</span>
 <select
 value={rnidDateFilter}
-onChange={(e) => setRnidDateFilter(e.target.value)}
+onChange={(e) => { setRnidDateFilter(e.target.value); setCurrentPage(0); }}
 className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
 >
 {rnidDateOptions.map((opt) => (
@@ -410,7 +419,7 @@ className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text
 <input
 type="search"
 value={rnidSearch}
-onChange={(e) => setRnidSearch(e.target.value)}
+onChange={(e) => { setRnidSearch(e.target.value); setCurrentPage(0); }}
 placeholder="Search by RNID"
 className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
 />
@@ -423,19 +432,19 @@ className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-non
 <input
 type="search"
 value={nameSearch}
-onChange={(e) => setNameSearch(e.target.value)}
+onChange={(e) => { setNameSearch(e.target.value); setCurrentPage(0); }}
 placeholder="Search by company name"
 className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
 />
 </div>
 </label>
-<div className="flex items-end gap-2">
+<div className="ml-auto flex items-end gap-2">
 <Button
 variant="secondary"
 size="sm"
 className="min-h-9 rounded-xl px-3 text-[12px]"
 onClick={handleDownloadCsv}
-disabled={isLoading || isDownloadingCsv || visibleRows.length === 0}
+disabled={isLoading || isDownloadingCsv || filteredRows.length === 0}
 >
 <Download className="h-3.5 w-3.5" />
 {isDownloadingCsv ? "Downloading..." : "Export"}
@@ -444,7 +453,7 @@ disabled={isLoading || isDownloadingCsv || visibleRows.length === 0}
 variant="secondary"
 size="sm"
 className="min-h-9 rounded-xl px-3 text-[12px]"
-onClick={() => { setRnidDateFilter("All"); setRnidSearch(""); setNameSearch(""); }}
+onClick={() => { setRnidDateFilter("All"); setRnidSearch(""); setNameSearch(""); setCurrentPage(0); }}
 >
 <X className="h-3.5 w-3.5" />
 Clear Filters
@@ -485,13 +494,13 @@ Clear Filters
 									Loading reception notes...
 								</td>
 							</tr>
-						) : visibleRows.length === 0 ? (
+						) : filteredRows.length === 0 ? (
 							<tr>
 								<td colSpan={TOTAL_COLUMNS} className="px-3 py-6 text-center text-slate-500">
 									No data available.
 								</td>
 							</tr>
-						) : visibleRows.map((row) => {
+						) : pagedRows.map((row) => {
 							const normalizedRnid = row.rnid.trim();
 							const isRowBusy = activeActionKey === `view:${normalizedRnid}` || activeActionKey === `download:${normalizedRnid}`;
 							return (
@@ -553,6 +562,52 @@ Clear Filters
 						})}
 					</tbody>
 				</table>
+			</div>
+
+			{/* Pagination */}
+			<div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+				<div className="flex items-center gap-2">
+					<span className="text-[12px] text-slate-500">Rows per page:</span>
+					{PAGE_SIZE_OPTIONS.map((size) => (
+						<button
+							key={size}
+							type="button"
+							onClick={() => { setPageSize(size); setCurrentPage(0); }}
+							className={`h-7 min-w-7 rounded-lg border px-2 text-[12px] font-medium transition ${
+								pageSize === size
+									? "border-[#36B44D] bg-[#36B44D]/10 text-[#36B44D]"
+									: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+							}`}
+						>
+							{size}
+						</button>
+					))}
+				</div>
+				<div className="flex items-center gap-3">
+					{filteredRows.length > 0 ? (
+						<span className="text-[12px] text-slate-500">
+							Showing {pageStart + 1}–{pageEnd} of {filteredRows.length} reception notes
+						</span>
+					) : null}
+					<div className="flex gap-1">
+						<button
+							type="button"
+							onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+							disabled={safePage === 0}
+							className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[12px] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							&#8249;
+						</button>
+						<button
+							type="button"
+							onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+							disabled={safePage >= totalPages - 1}
+							className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[12px] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							&#8250;
+						</button>
+					</div>
+				</div>
 			</div>
 </div>
 </>

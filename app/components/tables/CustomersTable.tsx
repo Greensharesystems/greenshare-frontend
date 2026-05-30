@@ -39,6 +39,7 @@ type CustomersTableProps = Readonly<{
 
 // Total data columns: 2 standalone + 7 customer-name + 6 focal-person + 1 last-active + 1 actions = 17
 const TOTAL_COLUMNS = 17;
+const PAGE_SIZE_OPTIONS = [5, 10, 20] as const;
 
 export default function CustomersTable({ showEmployeeCsvExport = false, showRemoveAction = true }: CustomersTableProps) {
 	const pathname = usePathname();
@@ -51,6 +52,8 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 	const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 	const [nameSearch, setNameSearch] = useState("");
 	const [regDateFilter, setRegDateFilter] = useState("All");
+	const [pageSize, setPageSize] = useState<number>(10);
+	const [currentPage, setCurrentPage] = useState(0);
 
 	useEffect(() => {
 		void loadCustomers();
@@ -107,7 +110,7 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 		setIsDownloadingCsv(true);
 
 		try {
-			await downloadCustomersCsv(visibleCustomers.map((customer) => customer.customerId));
+			await downloadCustomersCsv(filteredCustomers.map((customer) => customer.customerId));
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to download the customer dataset right now.");
 		} finally {
@@ -134,7 +137,7 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 		return ["All", ...sorted];
 	}, [customers]);
 
-	const visibleCustomers = useMemo(() => {
+	const filteredCustomers = useMemo(() => {
 		const normalizedSearch = nameSearch.trim().toLowerCase();
 		return customers.filter((customer) => {
 			if (normalizedSearch) {
@@ -153,6 +156,12 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 			return true;
 		});
 	}, [customers, nameSearch, regDateFilter]);
+
+	const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / pageSize));
+	const safePage = Math.min(currentPage, totalPages - 1);
+	const pageStart = safePage * pageSize;
+	const pageEnd = Math.min(pageStart + pageSize, filteredCustomers.length);
+	const visibleCustomers = filteredCustomers.slice(pageStart, pageEnd);
 
 	const confirmTarget = confirmRemoveId
 		? customers.find((c) => c.customerId === confirmRemoveId)
@@ -181,13 +190,14 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 				</div>
 			) : null}
 
+			<div className="flex w-full flex-col gap-4">
 			{/* Filters */}
 			<div className="flex flex-wrap items-end gap-3">
 				<label className="flex w-44 flex-col gap-1.5">
 					<span className="text-[11px] font-semibold text-slate-500">CID Date</span>
 					<select
 						value={regDateFilter}
-						onChange={(event) => setRegDateFilter(event.target.value)}
+						onChange={(event) => { setRegDateFilter(event.target.value); setCurrentPage(0); }}
 						className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 outline-none focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/10"
 					>
 						{regDateOptions.map((option) => (
@@ -202,13 +212,13 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 						<input
 							type="search"
 							value={nameSearch}
-							onChange={(event) => setNameSearch(event.target.value)}
+							onChange={(event) => { setNameSearch(event.target.value); setCurrentPage(0); }}
 							placeholder="Search by company or focal person"
 							className="w-full border-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-slate-400"
 						/>
 					</div>
 				</label>
-				<div className="flex items-end gap-2">
+			<div className="ml-auto flex items-end gap-2">
 					{showEmployeeCsvExport ? (
 						<Button
 							variant="secondary"
@@ -225,7 +235,7 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 						variant="secondary"
 						size="sm"
 						className="min-h-9 rounded-xl px-3 text-[12px]"
-						onClick={() => { setNameSearch(""); setRegDateFilter("All"); }}
+						onClick={() => { setNameSearch(""); setRegDateFilter("All"); setCurrentPage(0); }}
 					>
 						<X className="h-3.5 w-3.5" />
 						Clear Filters
@@ -234,7 +244,7 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 			</div>
 
 			{errorMessage ? (
-				<p className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p>
+				<p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{errorMessage}</p>
 			) : null}
 
 			<div className="w-full overflow-x-auto">
@@ -323,6 +333,53 @@ export default function CustomersTable({ showEmployeeCsvExport = false, showRemo
 						)}
 					</tbody>
 				</table>
+			</div>
+
+			{/* Pagination */}
+			<div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+				<div className="flex items-center gap-2">
+					<span className="text-[12px] text-slate-500">Rows per page:</span>
+					{PAGE_SIZE_OPTIONS.map((size) => (
+						<button
+							key={size}
+							type="button"
+							onClick={() => { setPageSize(size); setCurrentPage(0); }}
+							className={`h-7 min-w-7 rounded-lg border px-2 text-[12px] font-medium transition ${
+								pageSize === size
+									? "border-[#36B44D] bg-[#36B44D]/10 text-[#36B44D]"
+									: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+							}`}
+						>
+							{size}
+						</button>
+					))}
+				</div>
+				<div className="flex items-center gap-3">
+					{filteredCustomers.length > 0 ? (
+						<span className="text-[12px] text-slate-500">
+							Showing {pageStart + 1}–{pageEnd} of {filteredCustomers.length} customers
+						</span>
+					) : null}
+					<div className="flex gap-1">
+						<button
+							type="button"
+							onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+							disabled={safePage === 0}
+							className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[12px] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							&#8249;
+						</button>
+						<button
+							type="button"
+							onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+							disabled={safePage >= totalPages - 1}
+							className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[12px] text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							&#8250;
+						</button>
+					</div>
+				</div>
+			</div>
 			</div>
 		</>
 	);
