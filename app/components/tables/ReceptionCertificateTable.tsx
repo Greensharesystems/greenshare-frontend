@@ -440,7 +440,7 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 								<GroupHeader label="Waste Stream Details" colSpan={3} />
 								<HeaderCell rowSpan={2} label="RC Status" />
 								<HeaderCell rowSpan={2} label="Issued By" />
-								<HeaderCell rowSpan={2} label="Circularity Cert" />
+								<HeaderCell rowSpan={2} label={<><span className="block">Circularity</span><span className="block">Certificate</span></>} />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
@@ -667,7 +667,7 @@ function HeaderCell({
 	label,
 	rowSpan,
 	centered = false,
-}: Readonly<{ label: string; rowSpan?: number; centered?: boolean }>) {
+}: Readonly<{ label: React.ReactNode; rowSpan?: number; centered?: boolean }>) {
 	return (
 		<th
 			rowSpan={rowSpan}
