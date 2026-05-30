@@ -670,7 +670,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 					<FilterSelect className="w-36" label="Lab Status" value={filters.labStatus} onChange={(value) => updateFilter("labStatus", value)} options={["All", "Pending", "Accept", "Reject", "Not Applicable", "Other"]} />
 					<FilterSelect className="w-40" label="Proposal Status" value={filters.proposalStatus} onChange={(value) => updateFilter("proposalStatus", value)} options={["All", "Pending", "Sent", "Under Review", "Not Sent", "Other"]} />
 					<FilterSelect className="w-32" label="Lead Status" value={filters.status} onChange={(value) => updateFilter("status", value)} options={["All", "Open", "Won", "Lost", "Other"]} />
-					<div className="flex items-end gap-2">
+					<div className="ml-auto flex items-end gap-2">
 						{showExport ? (
 							<Button variant="secondary" size="sm" className="min-h-9 rounded-xl px-3 text-[12px]" onClick={exportVisibleRows}>
 								<Download className="h-3.5 w-3.5" />
