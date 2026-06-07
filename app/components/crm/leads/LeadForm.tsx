@@ -689,6 +689,12 @@ function formatLeadDate(date: Date) {
 
 
 function resolveErrorMessage(error: unknown, fallbackMessage: string) {
+	// TypeError means a network failure (CORS block, no connection, etc.)
+	// — the raw browser message ("Failed to fetch") is not useful to the user.
+	if (error instanceof TypeError) {
+		return fallbackMessage;
+	}
+
 	if (error instanceof Error && error.message.trim()) {
 		return error.message;
 	}

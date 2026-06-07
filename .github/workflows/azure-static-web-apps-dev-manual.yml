@@ -1,0 +1,44 @@
+name: Azure Static Web Apps Dev Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: Git ref to deploy to the SWA dev environment
+        required: true
+        default: dev
+  repository_dispatch:
+    types:
+      - deploy-dev-preview
+
+concurrency:
+  group: swa-dev-manual-${{ github.event.client_payload.target_ref || inputs.target_ref || 'dev' }}
+  cancel-in-progress: true
+
+jobs:
+  deploy_dev_preview:
+    runs-on: ubuntu-latest
+    name: Deploy Dev Preview
+    env:
+      TARGET_REF: ${{ github.event.client_payload.target_ref || inputs.target_ref || 'dev' }}
+    steps:
+      - name: Checkout target ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_REF }}
+          submodules: true
+          lfs: false
+
+      - name: Deploy Dev Preview
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WITTY_POND_0C214DB00 }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: /
+          api_location: ""
+          output_location: ""
+          skip_app_build: false
+          deployment_environment: dev
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}

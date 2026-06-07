@@ -36,6 +36,10 @@ type BackendLeadResponse = Readonly<{
 	lead_status: string;
 	lead_status_days: number;
 	lead_status_updated_at: string;
+	wds_date_submitted?: string | null;
+	wds_status: string;
+	wds_date_approved?: string | null;
+	wds_status_days?: number | null;
 }>;
 
 type BackendLabStatusResponse = Readonly<{
@@ -73,6 +77,19 @@ type BackendLeadStatusResponse = Readonly<{
 	updated_at: string;
 }>;
 
+type BackendWdsStatusResponse = Readonly<{
+	id: number;
+	lead_id: number;
+	lid: string;
+	date_submitted?: string | null;
+	date_approved?: string | null;
+	status: string;
+	days?: number | null;
+	comments?: string | null;
+	updated_by?: string | null;
+	updated_at: string;
+}>;
+
 type ApiErrorPayload = Readonly<{ detail?: string }>;
 
 export type CrmLabStatusRecord = Readonly<{
@@ -97,6 +114,16 @@ export type CrmLeadStatusRecord = Readonly<{
 	lid: string;
 	status: string;
 	otherStatus: string;
+	comments: string;
+	updatedBy: string;
+}>;
+
+export type CrmWdsStatusRecord = Readonly<{
+	lid: string;
+	dateSubmitted: string | null;
+	dateApproved: string | null;
+	status: string;
+	days: number | null;
 	comments: string;
 	updatedBy: string;
 }>;
@@ -313,6 +340,50 @@ export async function updateLeadStatus(lid: string, payload: Readonly<{ status: 
 }
 
 
+export async function getWdsStatus(lid: string): Promise<CrmWdsStatusRecord | null> {
+	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}/wds-status`, {
+		cache: "no-store",
+	});
+
+	if (response.status === 404) {
+		return null;
+	}
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, "Unable to load the WDS status right now."));
+	}
+
+	const payload = (await response.json()) as BackendWdsStatusResponse;
+	return mapBackendWdsStatus(payload);
+}
+
+
+export async function updateWdsStatus(
+	lid: string,
+	payload: Readonly<{ dateSubmitted: string | null; dateApproved: string | null; comments: string; updatedBy: string }>,
+): Promise<CrmWdsStatusRecord> {
+	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}/wds-status`, {
+		method: "PUT",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			date_submitted: normalizeOptionalString(payload.dateSubmitted),
+			date_approved: normalizeOptionalString(payload.dateApproved),
+			comments: normalizeOptionalString(payload.comments),
+			updated_by: normalizeOptionalString(payload.updatedBy),
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, "Unable to save the WDS status right now."));
+	}
+
+	const responsePayload = (await response.json()) as BackendWdsStatusResponse;
+	return mapBackendWdsStatus(responsePayload);
+}
+
+
 function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
 	const assignedToName = resolveAssigneeName(lead.assigned_to, lead.assigned_to_other);
 
@@ -343,6 +414,10 @@ function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
 		status: mapLeadLifecycleStatus(lead.lead_status),
 		leadStatusDays: Number.isFinite(lead.lead_status_days) ? lead.lead_status_days : 0,
 		leadStatusUpdatedDate: lead.lead_status_updated_at || lead.lead_date,
+		wdsDateSubmitted: lead.wds_date_submitted ?? null,
+		wdsStatus: lead.wds_status || "N/A",
+		wdsDateApproved: lead.wds_date_approved ?? null,
+		wdsStatusDays: lead.wds_status_days ?? null,
 	};
 }
 
@@ -378,6 +453,19 @@ function mapBackendLeadStatus(status: BackendLeadStatusResponse): CrmLeadStatusR
 		otherStatus: status.status_other ?? "",
 		comments: status.comments ?? "",
 		updatedBy: status.updated_by,
+	};
+}
+
+
+function mapBackendWdsStatus(status: BackendWdsStatusResponse): CrmWdsStatusRecord {
+	return {
+		lid: status.lid,
+		dateSubmitted: status.date_submitted ?? null,
+		dateApproved: status.date_approved ?? null,
+		status: status.status,
+		days: status.days ?? null,
+		comments: status.comments ?? "",
+		updatedBy: status.updated_by ?? "",
 	};
 }
 
