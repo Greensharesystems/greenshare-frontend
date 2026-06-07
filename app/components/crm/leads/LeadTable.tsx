@@ -1,10 +1,15 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, Eye, Pencil, Search, Trash2, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
+import LabStatusDrawer from "@/components/crm/leads/LabStatusDrawer";
+import LeadStatusDrawer from "@/components/crm/leads/LeadStatusDrawer";
+import ProposalStatusDrawer from "@/components/crm/leads/ProposalStatusDrawer";
+import WdsStatusDrawer from "@/components/crm/leads/WdsStatusDrawer";
+import type { CrmLabStatusRecord, CrmLeadStatusRecord, CrmProposalStatusRecord, CrmWdsStatusRecord } from "@/app/services/crm-leads.service";
 
 export type LeadLifecycleStatus = "Open" | "Won" | "Lost" | "Other";
 export type LabStatus = "Accept" | "Reject" | "Not Applicable" | "Other" | "Pending" | "Approved" | "Rejected";
@@ -40,9 +45,13 @@ export type LeadRecord = Readonly<{
 	status: LeadLifecycleStatus;
 	leadStatusDays: number;
 	leadStatusUpdatedDate: string;
+	wdsDateSubmitted: string | null;
+	wdsStatus: string;
+	wdsDateApproved: string | null;
+	wdsStatusDays: number | null;
 }>;
 
-type BaseLeadRecord = Omit<LeadRecord, "leadGeneratedDate" | "labUpdatedDate" | "proposalUpdatedDate" | "leadStatusUpdatedDate">;
+type BaseLeadRecord = Omit<LeadRecord, "leadGeneratedDate" | "labUpdatedDate" | "proposalUpdatedDate" | "leadStatusUpdatedDate" | "wdsDateSubmitted" | "wdsStatus" | "wdsDateApproved" | "wdsStatusDays">;
 
 type LeadTableProps = Readonly<{
 	leads: LeadRecord[];
@@ -70,7 +79,7 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 const ROWS_PER_PAGE_OPTIONS = [20, 10, 5] as const;
-const DATA_COLUMN_COUNT = 19;
+const DATA_COLUMN_COUNT = 23;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 const LAB_STATUS_DAY_OFFSETS = [3, 2, 4, 1, 5, 2, 6, 1, 3, 4, 7, 1, 5, 2, 4, 6, 1, 2, 3, 4] as const;
@@ -542,21 +551,37 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 	proposalUpdatedDate: addDaysToDisplayDate(lead.date, PROPOSAL_STATUS_DAY_OFFSETS[index] ?? 0),
 	leadStatusDays: calculateDaysBetween(lead.date, addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0)),
 	leadStatusUpdatedDate: addDaysToDisplayDate(lead.date, LEAD_STATUS_DAY_OFFSETS[index] ?? 0),
+	wdsDateSubmitted: null,
+	wdsStatus: "N/A",
+	wdsDateApproved: null,
+	wdsStatusDays: null,
 }));
+
+type DrawerState =
+	| { type: "lab"; lid: string; initialData: CrmLabStatusRecord | null }
+	| { type: "proposal"; lid: string; initialData: CrmProposalStatusRecord | null }
+	| { type: "lead"; lid: string; initialData: CrmLeadStatusRecord | null }
+	| { type: "wds"; lid: string; initialData: CrmWdsStatusRecord | null }
+	| null;
 
 export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onRemove, showExport = false }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 	const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>(20);
 	const [currentPage, setCurrentPage] = useState(1);
+	const [drawerState, setDrawerState] = useState<DrawerState>(null);
+	const [localLeads, setLocalLeads] = useState<LeadRecord[]>(leads);
+
+	// Keep localLeads in sync when the parent refreshes the leads prop
+	useEffect(() => { setLocalLeads(leads); }, [leads]);
 
 	const assignedToOptions = useMemo(() => {
-		return ["All", ...Array.from(new Set(leads.map((lead) => lead.assignedTo.name)))];
-	}, [leads]);
+		return ["All", ...Array.from(new Set(localLeads.map((lead) => lead.assignedTo.name)))];
+	}, [localLeads]);
 
 	const filteredLeads = useMemo(() => {
 		const normalizedSearch = filters.search.trim().toLowerCase();
 
-		return leads.filter((lead) => {
+		return localLeads.filter((lead) => {
 			const matchesSearch =
 				normalizedSearch.length === 0 ||
 				[lead.lid, lead.customerName, lead.wasteStream].some((value) => value.toLowerCase().includes(normalizedSearch));
@@ -570,7 +595,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 				(filters.proposalStatus === "All" || lead.proposalStatus === filters.proposalStatus)
 			);
 		});
-	}, [filters, leads]);
+	}, [filters, localLeads]);
 
 	const totalPages = Math.max(1, Math.ceil(filteredLeads.length / rowsPerPage));
 	const safePage = Math.min(currentPage, totalPages);
@@ -651,6 +676,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 	}
 
 	return (
+		<>
 		<div className="flex flex-col gap-5">
 			<div className="flex flex-wrap items-end gap-3">
 					<label className="flex w-64 flex-col gap-1.5">
@@ -722,6 +748,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<GroupHeader label="Lab Status" colSpan={3} />
 								<GroupHeader label="Proposal Status" colSpan={3} />
 								<GroupHeader label="Lead Status" colSpan={2} />
+								<GroupHeader label="WDS Status" colSpan={4} />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -732,6 +759,10 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<HeaderCell label="Status" />
 								<HeaderCell label="Days" centered />
 								<HeaderCell label="Status" />
+								<HeaderCell label="Days" centered />
+								<HeaderCell label="Date Submitted" />
+								<HeaderCell label="Status" />
+								<HeaderCell label="Date Approved" />
 								<HeaderCell label="Days" centered />
 							</tr>
 						</thead>
@@ -767,23 +798,53 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 										<DataCell>{lead.estimatedQuantity}</DataCell>
 										<DataCell>{lead.unit}</DataCell>
 										<DataCell>
-										<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.labId} />
+											<button type="button" className="cursor-pointer text-left" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, initialData: null })}>
+												<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.labId} />
+											</button>
 										</DataCell>
 										<DataCell>
-											<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
+											<button type="button" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, initialData: null })}>
+												<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
+											</button>
 										</DataCell>
 										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.labStatusDays)}</DataCell>
 										<DataCell>
-										{lead.proposalId ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
+											<button type="button" className="cursor-pointer text-left" title="Update Proposal Status" onClick={() => setDrawerState({ type: "proposal", lid: lead.lid, initialData: null })}>
+												{lead.proposalId ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
+											</button>
 										</DataCell>
 										<DataCell>
-											<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
+											<button type="button" title="Update Proposal Status" onClick={() => setDrawerState({ type: "proposal", lid: lead.lid, initialData: null })}>
+												<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
+											</button>
 										</DataCell>
 										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.proposalStatusDays)}</DataCell>
 										<DataCell>
-											<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
+											<button type="button" title="Update Lead Status" onClick={() => setDrawerState({ type: "lead", lid: lead.lid, initialData: null })}>
+												<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
+											</button>
 										</DataCell>
 										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.leadStatusDays)}</DataCell>
+										<DataCell>
+											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+												<span className="text-slate-500 text-[12px]">{lead.wdsDateSubmitted ?? "-"}</span>
+											</button>
+										</DataCell>
+										<DataCell>
+											<button type="button" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+												<Badge tone={wdsBadgeTone(lead.wdsStatus)}>{lead.wdsStatus}</Badge>
+											</button>
+										</DataCell>
+										<DataCell>
+											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+												<span className="text-slate-500 text-[12px]">{lead.wdsDateApproved ?? "-"}</span>
+											</button>
+										</DataCell>
+										<DataCell centered className="text-[11px] font-medium text-slate-500">
+											<button type="button" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+												{lead.wdsStatusDays !== null ? formatDays(lead.wdsStatusDays) : "-"}
+											</button>
+										</DataCell>
 										<DataCell centered>
 											<div className="flex items-center justify-center gap-1.5">
 											<ActionLink href={`${linkBase}/${lead.lid}`} label="View">
@@ -850,11 +911,96 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 					</div>
 				</div>
 		</div>
+
+		{drawerState?.type === "lab" ? (
+			<LabStatusDrawer
+				open
+				onClose={() => setDrawerState(null)}
+				lid={drawerState.lid}
+				initialData={drawerState.initialData}
+				onSaved={(record) => {
+					setLocalLeads((current) =>
+						current.map((lead) =>
+							lead.lid === record.lid
+								? { ...lead, labId: record.labId, labStatus: record.decision as LeadRecord["labStatus"] }
+								: lead,
+						),
+					);
+				}}
+			/>
+		) : null}
+
+		{drawerState?.type === "proposal" ? (
+			<ProposalStatusDrawer
+				open
+				onClose={() => setDrawerState(null)}
+				lid={drawerState.lid}
+				initialData={drawerState.initialData}
+				onSaved={(record) => {
+					setLocalLeads((current) =>
+						current.map((lead) =>
+							lead.lid === record.lid
+								? { ...lead, proposalId: record.pid || lead.proposalId, proposalStatus: record.status as LeadRecord["proposalStatus"] }
+								: lead,
+						),
+					);
+				}}
+			/>
+		) : null}
+
+		{drawerState?.type === "lead" ? (
+			<LeadStatusDrawer
+				open
+				onClose={() => setDrawerState(null)}
+				lid={drawerState.lid}
+				initialData={drawerState.initialData}
+				onSaved={(record) => {
+					setLocalLeads((current) =>
+						current.map((lead) =>
+							lead.lid === record.lid
+								? { ...lead, status: record.status as LeadRecord["status"] }
+								: lead,
+						),
+					);
+				}}
+			/>
+		) : null}
+
+		{drawerState?.type === "wds" ? (
+			<WdsStatusDrawer
+				open
+				onClose={() => setDrawerState(null)}
+				lid={drawerState.lid}
+				initialData={drawerState.initialData}
+				onSaved={(record) => {
+					setLocalLeads((current) =>
+						current.map((lead) =>
+							lead.lid === record.lid
+								? {
+										...lead,
+										wdsDateSubmitted: record.dateSubmitted,
+										wdsStatus: record.status,
+										wdsDateApproved: record.dateApproved,
+										wdsStatusDays: record.days,
+								  }
+								: lead,
+						),
+					);
+				}}
+			/>
+		) : null}
+	</>
 	);
 }
 
 function formatDays(days: number) {
 	return `${days} Days`;
+}
+
+function wdsBadgeTone(status: string) {
+	if (status === "Approved") return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+	if (status === "Open") return "bg-sky-50 text-sky-700 ring-sky-200";
+	return "bg-slate-100 text-slate-600 ring-slate-200";
 }
 
 function getWasteClassLabel(lead: LeadRecord) {
