@@ -40,6 +40,7 @@ type BackendLeadResponse = Readonly<{
 	wds_status: string;
 	wds_date_approved?: string | null;
 	wds_status_days?: number | null;
+	wds_no?: string | null;
 }>;
 
 type BackendLabStatusResponse = Readonly<{
@@ -81,6 +82,7 @@ type BackendWdsStatusResponse = Readonly<{
 	id: number;
 	lead_id: number;
 	lid: string;
+	wds_no?: string | null;
 	date_submitted?: string | null;
 	date_approved?: string | null;
 	status: string;
@@ -120,6 +122,7 @@ export type CrmLeadStatusRecord = Readonly<{
 
 export type CrmWdsStatusRecord = Readonly<{
 	lid: string;
+	wdsNo: string | null;
 	dateSubmitted: string | null;
 	dateApproved: string | null;
 	status: string;
@@ -360,7 +363,7 @@ export async function getWdsStatus(lid: string): Promise<CrmWdsStatusRecord | nu
 
 export async function updateWdsStatus(
 	lid: string,
-	payload: Readonly<{ dateSubmitted: string | null; dateApproved: string | null; comments: string; updatedBy: string }>,
+	payload: Readonly<{ wdsNo: string | null; dateSubmitted: string | null; dateApproved: string | null; comments: string; updatedBy: string }>,
 ): Promise<CrmWdsStatusRecord> {
 	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}/wds-status`, {
 		method: "PUT",
@@ -368,6 +371,7 @@ export async function updateWdsStatus(
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({
+			wds_no: normalizeOptionalString(payload.wdsNo),
 			date_submitted: normalizeOptionalString(payload.dateSubmitted),
 			date_approved: normalizeOptionalString(payload.dateApproved),
 			comments: normalizeOptionalString(payload.comments),
@@ -418,6 +422,7 @@ function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
 		wdsStatus: lead.wds_status || "N/A",
 		wdsDateApproved: lead.wds_date_approved ?? null,
 		wdsStatusDays: lead.wds_status_days ?? null,
+		wdsNo: lead.wds_no ?? null,
 	};
 }
 
@@ -460,6 +465,7 @@ function mapBackendLeadStatus(status: BackendLeadStatusResponse): CrmLeadStatusR
 function mapBackendWdsStatus(status: BackendWdsStatusResponse): CrmWdsStatusRecord {
 	return {
 		lid: status.lid,
+		wdsNo: status.wds_no ?? null,
 		dateSubmitted: status.date_submitted ?? null,
 		dateApproved: status.date_approved ?? null,
 		status: status.status,
