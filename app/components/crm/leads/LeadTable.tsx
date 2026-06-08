@@ -538,7 +538,7 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 }));
 
 type DrawerState =
-	| { type: "lab"; lid: string; streamNo: string; initialData: CrmLabStreamStatusRecord | null }
+	| { type: "lab"; lid: string; streamNo: string; wasteStreamName: string; initialData: CrmLabStreamStatusRecord | null }
 	| { type: "proposal"; lid: string; initialData: CrmProposalStatusRecord | null }
 	| { type: "lead"; lid: string; initialData: CrmLeadStatusRecord | null }
 	| { type: "wds"; lid: string; initialData: CrmWdsStatusRecord | null }
@@ -837,7 +837,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 										<DataCell className={groupBorderMid}>{lead.estimatedQuantity}</DataCell>
 										<DataCell className={groupBorderMid}>{lead.unit}</DataCell>
 										<DataCell className={groupBorderMid}>
-											<button type="button" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, streamNo: lead.streamNo ?? "SN-001", initialData: null })}>
+											<button type="button" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, streamNo: lead.streamNo ?? "SN-001", wasteStreamName: lead.wasteStream, initialData: null })}>
 												<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
 											</button>
 										</DataCell>
@@ -967,6 +967,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 				onClose={() => setDrawerState(null)}
 				lid={drawerState.lid}
 				streamNo={drawerState.streamNo}
+				wasteStreamName={drawerState.wasteStreamName}
 				initialData={drawerState.initialData}
 				onSaved={(record) => {
 					setLocalLeads((current) =>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { updateLabStreamStatus, type CrmLabStreamStatusRecord } from "@/app/services/crm-leads.service";
+import { getLabStreamStatus, updateLabStreamStatus, type CrmLabStreamStatusRecord } from "@/app/services/crm-leads.service";
 
 type LabDecision = "Accept" | "Reject" | "Not Applicable" | "Other";
 
@@ -11,6 +11,7 @@ type LabStatusDrawerProps = Readonly<{
 	onClose: () => void;
 	lid: string;
 	streamNo: string;
+	wasteStreamName?: string;
 	initialData: CrmLabStreamStatusRecord | null;
 	onSaved: (record: CrmLabStreamStatusRecord) => void;
 }>;
@@ -38,11 +39,34 @@ function isLabDecision(value: string): value is LabDecision {
 	return value === "Accept" || value === "Reject" || value === "Not Applicable" || value === "Other";
 }
 
-export default function LabStatusDrawer({ open, onClose, lid, streamNo, initialData, onSaved }: LabStatusDrawerProps) {
+export default function LabStatusDrawer({ open, onClose, lid, streamNo, wasteStreamName, initialData, onSaved }: LabStatusDrawerProps) {
 	const [form, setForm] = useState<FormState>(() => buildInitialState(initialData));
 	const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 	const [submitError, setSubmitError] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
+
+	// Preload the existing lab record for this specific stream so Edit shows current values.
+	useEffect(() => {
+		if (!open || initialData) {
+			return;
+		}
+
+		let cancelled = false;
+
+		void getLabStreamStatus(lid, streamNo)
+			.then((record) => {
+				if (!cancelled && record.decision.trim()) {
+					setForm(buildInitialState(record));
+				}
+			})
+			.catch(() => {
+				// No saved record yet (or load failed); keep the blank form.
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [open, lid, streamNo, initialData]);
 
 	if (!open) {
 		return null;
@@ -108,6 +132,7 @@ export default function LabStatusDrawer({ open, onClose, lid, streamNo, initialD
 					<div className="grid gap-4">
 						<DrawerDisplayField label="LID" value={lid} />
 						<DrawerDisplayField label="Stream No." value={streamNo} />
+						{wasteStreamName ? <DrawerDisplayField label="Waste Stream Name" value={wasteStreamName} /> : null}
 						<DrawerTextAreaField
 							label="Comments"
 							value={form.comments}

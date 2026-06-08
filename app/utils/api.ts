@@ -33,6 +33,8 @@ type DownloadPdfWithAuthOptions = Readonly<{
 }>;
 
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+
 export async function apiFetch(path: string, init?: RequestInit) {
 	const session = readAuthSession();
 	const headers = new Headers(init?.headers);
@@ -41,20 +43,35 @@ export async function apiFetch(path: string, init?: RequestInit) {
 		headers.set("Authorization", `Bearer ${session.accessToken}`);
 	}
 
-	const response = await fetch(buildApiUrl(path), {
-		...init,
-		headers,
-	});
+	const timeoutController = new AbortController();
+	const timeoutId = setTimeout(() => timeoutController.abort(), DEFAULT_REQUEST_TIMEOUT_MS);
 
-	if (response.status === 401 && typeof window !== "undefined") {
-		clearAuthSession();
+	try {
+		const response = await fetch(buildApiUrl(path), {
+			...init,
+			headers,
+			signal: init?.signal ?? timeoutController.signal,
+		});
 
-		if (window.location.pathname !== "/") {
-			window.location.replace("/");
+		if (response.status === 401 && typeof window !== "undefined") {
+			clearAuthSession();
+
+			if (window.location.pathname !== "/") {
+				window.location.replace("/");
+			}
 		}
-	}
 
-	return response;
+		return response;
+	}
+	catch (error) {
+		if (timeoutController.signal.aborted) {
+			throw new Error("The request timed out. Please check your connection and try again.");
+		}
+		throw error;
+	}
+	finally {
+		clearTimeout(timeoutId);
+	}
 }
 
 

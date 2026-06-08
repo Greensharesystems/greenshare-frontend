@@ -106,9 +106,10 @@ estimatedQuantity={`${leadRecord.estimatedQuantity} ${leadRecord.unit}`}
 />
 <div className="mt-6 grid gap-6 xl:grid-cols-4">
 <StatusPanelCard
-title="Waste Streams"
+title="Lab Status"
 badge={<StatusBadge tone="bg-slate-100 text-slate-600">{streams.length} Stream{streams.length !== 1 ? "s" : ""}</StatusBadge>}
 >
+<DisplayField label="LID" value={leadRecord.lid} />
 {streams.length === 0 ? (
 <p className="text-sm text-slate-400">No streams recorded.</p>
 ) : (
