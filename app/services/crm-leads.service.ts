@@ -1,10 +1,27 @@
-"use client";
+﻿"use client";
 
 import type { LeadFormData } from "@/components/crm/leads/LeadForm";
 import type { LeadLifecycleStatus, LeadRecord, ProposalStatus, LabStatus, WasteClass } from "@/components/crm/leads/LeadTable";
 
 import { apiFetch } from "@/app/utils/api";
 
+
+type BackendLeadStreamResponse = Readonly<{
+	id: number;
+	lid: string;
+	stream_no: string;
+	waste_stream_name: string;
+	est_qty: number;
+	unit: string;
+	unit_other?: string | null;
+	waste_class: string;
+	waste_class_other?: string | null;
+	lab_decision: string;
+	lab_decision_other?: string | null;
+	lab_comments?: string | null;
+	lab_chemist_name: string;
+	lab_status_days: number;
+}>;
 
 type BackendLeadResponse = Readonly<{
 	id: number;
@@ -25,6 +42,7 @@ type BackendLeadResponse = Readonly<{
 	lead_date: string;
 	created_at: string;
 	updated_at: string;
+	streams: BackendLeadStreamResponse[];
 	lab_id?: string | null;
 	lab_status: string;
 	lab_status_days: number;
@@ -53,6 +71,16 @@ type BackendLabStatusResponse = Readonly<{
 	comments?: string | null;
 	chemist_name: string;
 	updated_at: string;
+}>;
+
+type BackendLabStreamStatusResponse = Readonly<{
+	id: number;
+	lid: string;
+	stream_no: string;
+	decision: string;
+	decision_other?: string | null;
+	comments?: string | null;
+	chemist_name: string;
 }>;
 
 type BackendProposalStatusResponse = Readonly<{
@@ -103,6 +131,32 @@ export type CrmLabStatusRecord = Readonly<{
 	chemistName: string;
 }>;
 
+export type CrmLabStreamStatusRecord = Readonly<{
+	lid: string;
+	streamNo: string;
+	decision: string;
+	otherDecision: string;
+	comments: string;
+	chemistName: string;
+}>;
+
+export type CrmLeadStreamRecord = Readonly<{
+	id: number;
+	lid: string;
+	streamNo: string;
+	wasteStreamName: string;
+	estQty: number;
+	unit: string;
+	unitOther: string | null;
+	wasteClass: string;
+	wasteClassOther: string | null;
+	labDecision: string;
+	labDecisionOther: string | null;
+	labComments: string | null;
+	labChemistName: string;
+	labStatusDays: number;
+}>;
+
 export type CrmProposalStatusRecord = Readonly<{
 	lid: string;
 	pid: string;
@@ -142,7 +196,7 @@ export async function getLeadRecords(): Promise<LeadRecord[]> {
 	}
 
 	const payload = (await response.json()) as BackendLeadResponse[];
-	return payload.map(mapBackendLeadToLeadRecord);
+	return payload.flatMap(mapBackendLeadToLeadRows);
 }
 
 
@@ -156,7 +210,8 @@ export async function getLeadById(lid: string): Promise<LeadRecord> {
 	}
 
 	const payload = (await response.json()) as BackendLeadResponse;
-	return mapBackendLeadToLeadRecord(payload);
+	const rows = mapBackendLeadToLeadRows(payload);
+	return rows[0]!;
 }
 
 
@@ -188,12 +243,14 @@ export async function createLeadRecord(leadData: LeadFormData): Promise<LeadReco
 			source_detail: buildSourceDetail(leadData),
 			assigned_to: leadData.assignedTo,
 			assigned_to_other: leadData.assignedTo === "Other" ? normalizeOptionalString(leadData.assignedPersonName) : null,
-			waste_stream: leadData.wasteStream.trim(),
-			waste_class: leadData.wasteClass,
-			waste_class_other: leadData.wasteClass === "Others" ? normalizeOptionalString(leadData.otherWasteClass) : null,
-			est_qty: Number(leadData.estimatedQuantity),
-			unit: leadData.unit,
-			unit_other: leadData.unit === "Others" ? normalizeOptionalString(leadData.otherUnit) : null,
+			streams: leadData.streams.map((s) => ({
+				waste_stream_name: s.wasteStreamName.trim(),
+				waste_class: s.wasteClass,
+				waste_class_other: s.wasteClass === "Others" ? normalizeOptionalString(s.otherWasteClass) : null,
+				est_qty: Number(s.estimatedQuantity),
+				unit: s.unit,
+				unit_other: s.unit === "Others" ? normalizeOptionalString(s.otherUnit) : null,
+			})),
 			comments: normalizeOptionalString(leadData.comments),
 			lead_date: leadData.leadDate,
 		}),
@@ -204,7 +261,8 @@ export async function createLeadRecord(leadData: LeadFormData): Promise<LeadReco
 	}
 
 	const payload = (await response.json()) as BackendLeadResponse;
-	return mapBackendLeadToLeadRecord(payload);
+	const rows = mapBackendLeadToLeadRows(payload);
+	return rows[0]!;
 }
 
 export async function deleteLeadRecord(lid: string): Promise<void> {
@@ -215,6 +273,63 @@ export async function deleteLeadRecord(lid: string): Promise<void> {
 	if (!response.ok) {
 		throw new Error(await extractResponseErrorMessage(response, "Unable to remove that lead right now."));
 	}
+}
+
+
+export async function getLeadStreams(lid: string): Promise<CrmLeadStreamRecord[]> {
+	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}/streams`, {
+		cache: "no-store",
+	});
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, "Unable to load streams for this lead right now."));
+	}
+
+	const payload = (await response.json()) as BackendLeadStreamResponse[];
+	return payload.map(mapBackendLeadStream);
+}
+
+
+export async function getLabStreamStatus(lid: string, streamNo: string): Promise<CrmLabStreamStatusRecord> {
+	const response = await apiFetch(
+		`/crm/leads/${encodeURIComponent(lid)}/streams/${encodeURIComponent(streamNo)}/lab-status`,
+		{ cache: "no-store" },
+	);
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, "Unable to load the lab status right now."));
+	}
+
+	const payload = (await response.json()) as BackendLabStreamStatusResponse;
+	return mapBackendLabStreamStatus(payload);
+}
+
+
+export async function updateLabStreamStatus(
+	lid: string,
+	streamNo: string,
+	payload: Readonly<{ decision: string; otherDecision: string; comments: string; chemistName: string }>,
+): Promise<CrmLabStreamStatusRecord> {
+	const response = await apiFetch(
+		`/crm/leads/${encodeURIComponent(lid)}/streams/${encodeURIComponent(streamNo)}/lab-status`,
+		{
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				decision: payload.decision,
+				decision_other: payload.decision === "Other" ? normalizeOptionalString(payload.otherDecision) : null,
+				comments: normalizeOptionalString(payload.comments),
+				chemist_name: payload.chemistName.trim(),
+			}),
+		},
+	);
+
+	if (!response.ok) {
+		throw new Error(await extractResponseErrorMessage(response, "Unable to save the lab status right now."));
+	}
+
+	const responsePayload = (await response.json()) as BackendLabStreamStatusResponse;
+	return mapBackendLabStreamStatus(responsePayload);
 }
 
 
@@ -278,14 +393,13 @@ export async function getProposalStatus(lid: string): Promise<CrmProposalStatusR
 }
 
 
-export async function updateProposalStatus(lid: string, payload: Readonly<{ pid: string; status: string; otherStatus: string; comments: string; updatedBy: string }>): Promise<CrmProposalStatusRecord> {
+export async function updateProposalStatus(lid: string, payload: Readonly<{ status: string; otherStatus: string; comments: string; updatedBy: string }>): Promise<CrmProposalStatusRecord> {
 	const response = await apiFetch(`/crm/leads/${encodeURIComponent(lid)}/proposal-status`, {
 		method: "PUT",
 		headers: {
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({
-			pid: payload.pid.trim(),
 			status: payload.status,
 			status_other: payload.status === "Other" ? normalizeOptionalString(payload.otherStatus) : null,
 			comments: normalizeOptionalString(payload.comments),
@@ -388,10 +502,10 @@ export async function updateWdsStatus(
 }
 
 
-function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
+function mapBackendLeadToLeadRows(lead: BackendLeadResponse): LeadRecord[] {
 	const assignedToName = resolveAssigneeName(lead.assigned_to, lead.assigned_to_other);
 
-	return {
+	const base = {
 		date: lead.lead_date,
 		leadGeneratedDate: lead.lead_date,
 		lid: lead.lid,
@@ -402,16 +516,6 @@ function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
 		},
 		cid: lead.cid,
 		customerName: lead.customer_name,
-		wasteStream: lead.waste_stream,
-		wasteClass: mapWasteClass(lead.waste_class),
-		otherWasteClass: lead.waste_class_other ?? null,
-		estimatedQuantity: Number.isFinite(lead.est_qty) ? lead.est_qty : 0,
-		unit: resolveUnit(lead.unit, lead.unit_other),
-		labId: lead.lab_id ?? "",
-		labStatus: mapLabStatus(lead.lab_status),
-		labStatusDays: Number.isFinite(lead.lab_status_days) ? lead.lab_status_days : 0,
-		labUpdatedDate: lead.lab_updated_at || lead.lead_date,
-		proposalId: lead.proposal_id ?? null,
 		proposalStatus: mapProposalStatus(lead.proposal_status),
 		proposalStatusDays: Number.isFinite(lead.proposal_status_days) ? lead.proposal_status_days : 0,
 		proposalUpdatedDate: lead.proposal_updated_at || lead.lead_date,
@@ -424,6 +528,35 @@ function mapBackendLeadToLeadRecord(lead: BackendLeadResponse): LeadRecord {
 		wdsStatusDays: lead.wds_status_days ?? null,
 		wdsNo: lead.wds_no ?? null,
 	};
+
+	if (lead.streams.length > 0) {
+		return lead.streams.map((stream) => ({
+			...base,
+			streamNo: stream.stream_no,
+			wasteStream: stream.waste_stream_name,
+			wasteClass: mapWasteClass(stream.waste_class),
+			otherWasteClass: stream.waste_class_other ?? null,
+			estimatedQuantity: Number.isFinite(stream.est_qty) ? stream.est_qty : 0,
+			unit: resolveUnit(stream.unit, stream.unit_other),
+			labStatus: mapLabStatus(stream.lab_decision),
+			labStatusDays: Number.isFinite(stream.lab_status_days) ? stream.lab_status_days : 0,
+			labUpdatedDate: lead.lab_updated_at || lead.lead_date,
+		}));
+	}
+
+	// Fallback for leads without streams (should not normally occur after migration)
+	return [{
+		...base,
+		streamNo: null,
+		wasteStream: lead.waste_stream,
+		wasteClass: mapWasteClass(lead.waste_class),
+		otherWasteClass: lead.waste_class_other ?? null,
+		estimatedQuantity: Number.isFinite(lead.est_qty) ? lead.est_qty : 0,
+		unit: resolveUnit(lead.unit, lead.unit_other),
+		labStatus: mapLabStatus(lead.lab_status),
+		labStatusDays: Number.isFinite(lead.lab_status_days) ? lead.lab_status_days : 0,
+		labUpdatedDate: lead.lab_updated_at || lead.lead_date,
+	}];
 }
 
 
@@ -435,6 +568,38 @@ function mapBackendLabStatus(status: BackendLabStatusResponse): CrmLabStatusReco
 		otherDecision: status.decision_other ?? "",
 		comments: status.comments ?? "",
 		chemistName: status.chemist_name,
+	};
+}
+
+
+function mapBackendLabStreamStatus(status: BackendLabStreamStatusResponse): CrmLabStreamStatusRecord {
+	return {
+		lid: status.lid,
+		streamNo: status.stream_no,
+		decision: status.decision,
+		otherDecision: status.decision_other ?? "",
+		comments: status.comments ?? "",
+		chemistName: status.chemist_name,
+	};
+}
+
+
+function mapBackendLeadStream(stream: BackendLeadStreamResponse): CrmLeadStreamRecord {
+	return {
+		id: stream.id,
+		lid: stream.lid,
+		streamNo: stream.stream_no,
+		wasteStreamName: stream.waste_stream_name,
+		estQty: stream.est_qty,
+		unit: stream.unit,
+		unitOther: stream.unit_other ?? null,
+		wasteClass: stream.waste_class,
+		wasteClassOther: stream.waste_class_other ?? null,
+		labDecision: stream.lab_decision,
+		labDecisionOther: stream.lab_decision_other ?? null,
+		labComments: stream.lab_comments ?? null,
+		labChemistName: stream.lab_chemist_name,
+		labStatusDays: stream.lab_status_days,
 	};
 }
 

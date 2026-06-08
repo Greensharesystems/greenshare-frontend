@@ -15,7 +15,6 @@ type ProposalStatusDrawerProps = Readonly<{
 }>;
 
 type FormState = {
-	pid: string;
 	comments: string;
 	status: ProposalPanelStatus | "";
 	otherStatus: string;
@@ -25,14 +24,13 @@ type FormState = {
 function buildInitialState(initialData: CrmProposalStatusRecord | null): FormState {
 	if (initialData && initialData.status.trim()) {
 		return {
-			pid: initialData.pid,
 			comments: initialData.comments,
 			status: isProposalPanelStatus(initialData.status) ? initialData.status : "Other",
 			otherStatus: initialData.otherStatus,
 			updatedBy: initialData.updatedBy,
 		};
 	}
-	return { pid: "", comments: "", status: "", otherStatus: "", updatedBy: "" };
+	return { comments: "", status: "", otherStatus: "", updatedBy: "" };
 }
 
 function isProposalPanelStatus(value: string): value is ProposalPanelStatus {
@@ -51,7 +49,6 @@ export default function ProposalStatusDrawer({ open, onClose, lid, initialData, 
 
 	function validate(): Partial<Record<keyof FormState, string>> {
 		const result: Partial<Record<keyof FormState, string>> = {};
-		if (!form.pid.trim()) result.pid = "PID is required.";
 		if (!form.status) result.status = "Status is required.";
 		if (form.status === "Other" && !form.otherStatus.trim()) result.otherStatus = "Other Status is required.";
 		if (!form.updatedBy.trim()) result.updatedBy = "Updated By is required.";
@@ -71,7 +68,6 @@ export default function ProposalStatusDrawer({ open, onClose, lid, initialData, 
 		setIsSaving(true);
 		try {
 			const saved = await updateProposalStatus(lid, {
-				pid: form.pid,
 				status: form.status,
 				otherStatus: form.otherStatus,
 				comments: form.comments,
@@ -110,13 +106,7 @@ export default function ProposalStatusDrawer({ open, onClose, lid, initialData, 
 				<form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
 					<div className="grid gap-4">
 						<DrawerDisplayField label="LID" value={lid} />
-						<DrawerTextField
-							label="PID"
-							value={form.pid}
-							onChange={(v) => setForm((s) => ({ ...s, pid: v }))}
-							error={errors.pid}
-							placeholder="PID-0001"
-						/>
+
 						<DrawerTextAreaField
 							label="Comments"
 							value={form.comments}
