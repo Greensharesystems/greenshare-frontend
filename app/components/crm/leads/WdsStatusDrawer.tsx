@@ -13,6 +13,7 @@ type WdsStatusDrawerProps = Readonly<{
 }>;
 
 type FormState = {
+	wdsNo: string;
 	dateSubmitted: string;
 	dateApproved: string;
 	comments: string;
@@ -22,13 +23,14 @@ type FormState = {
 function buildInitialState(initialData: CrmWdsStatusRecord | null): FormState {
 	if (initialData) {
 		return {
+			wdsNo: initialData.wdsNo ?? "",
 			dateSubmitted: initialData.dateSubmitted ?? "",
 			dateApproved: initialData.dateApproved ?? "",
 			comments: initialData.comments,
 			updatedBy: initialData.updatedBy,
 		};
 	}
-	return { dateSubmitted: "", dateApproved: "", comments: "", updatedBy: "" };
+	return { wdsNo: "", dateSubmitted: "", dateApproved: "", comments: "", updatedBy: "" };
 }
 
 export default function WdsStatusDrawer({ open, onClose, lid, initialData, onSaved }: WdsStatusDrawerProps) {
@@ -47,6 +49,7 @@ export default function WdsStatusDrawer({ open, onClose, lid, initialData, onSav
 
 		try {
 			const saved = await updateWdsStatus(lid, {
+				wdsNo: form.wdsNo.trim() || null,
 				dateSubmitted: form.dateSubmitted.trim() || null,
 				dateApproved: form.dateApproved.trim() || null,
 				comments: form.comments,
@@ -85,8 +88,12 @@ export default function WdsStatusDrawer({ open, onClose, lid, initialData, onSav
 				<form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
 					<div className="grid gap-4">
 						<DrawerDisplayField label="LID" value={lid} />
-						<DrawerTextField
-							label="Date Submitted"
+						<DrawerTextField						label="WDS No."
+						value={form.wdsNo}
+						onChange={(v) => setForm((s) => ({ ...s, wdsNo: v }))}
+						placeholder="Enter WDS number"
+					/>
+					<DrawerTextField							label="Date Submitted"
 							value={form.dateSubmitted}
 							onChange={(v) => setForm((s) => ({ ...s, dateSubmitted: v }))}
 							placeholder="dd-MM-yyyy"

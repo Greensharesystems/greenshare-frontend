@@ -49,9 +49,10 @@ export type LeadRecord = Readonly<{
 	wdsStatus: string;
 	wdsDateApproved: string | null;
 	wdsStatusDays: number | null;
+	wdsNo: string | null;
 }>;
 
-type BaseLeadRecord = Omit<LeadRecord, "leadGeneratedDate" | "labUpdatedDate" | "proposalUpdatedDate" | "leadStatusUpdatedDate" | "wdsDateSubmitted" | "wdsStatus" | "wdsDateApproved" | "wdsStatusDays">;
+type BaseLeadRecord = Omit<LeadRecord, "leadGeneratedDate" | "labUpdatedDate" | "proposalUpdatedDate" | "leadStatusUpdatedDate" | "wdsDateSubmitted" | "wdsStatus" | "wdsDateApproved" | "wdsStatusDays" | "wdsNo">;
 
 type LeadTableProps = Readonly<{
 	leads: LeadRecord[];
@@ -79,7 +80,7 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 const ROWS_PER_PAGE_OPTIONS = [20, 10, 5] as const;
-const DATA_COLUMN_COUNT = 23;
+const DATA_COLUMN_COUNT = 24;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 const LAB_STATUS_DAY_OFFSETS = [3, 2, 4, 1, 5, 2, 6, 1, 3, 4, 7, 1, 5, 2, 4, 6, 1, 2, 3, 4] as const;
@@ -555,6 +556,7 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 	wdsStatus: "N/A",
 	wdsDateApproved: null,
 	wdsStatusDays: null,
+	wdsNo: null,
 }));
 
 type DrawerState =
@@ -731,6 +733,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 							<col className="w-22" />
 							<col className="w-[4.5rem]" />
 							<col className="w-[4.5rem]" />
+							<col className="w-22" />
 							<col className="w-21" />
 						</colgroup>
 						<thead className="sticky top-0 z-10 bg-slate-50">
@@ -748,7 +751,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<GroupHeader label="Lab Status" colSpan={3} />
 								<GroupHeader label="Proposal Status" colSpan={3} />
 								<GroupHeader label="Lead Status" colSpan={2} />
-								<GroupHeader label="WDS Status" colSpan={4} />
+								<GroupHeader label="WDS Status" colSpan={5} />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -760,6 +763,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<HeaderCell label="Days" centered />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Days" centered />
+								<HeaderCell label="WDS No." />
 								<HeaderCell label="Date Submitted" />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Date Approved" />
@@ -825,6 +829,11 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 											</button>
 										</DataCell>
 										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.leadStatusDays)}</DataCell>
+										<DataCell>
+											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+												<span className="text-slate-500 text-[12px]">{lead.wdsNo ?? "N/A"}</span>
+											</button>
+										</DataCell>
 										<DataCell>
 											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
 												<span className="text-slate-500 text-[12px]">{lead.wdsDateSubmitted ?? "-"}</span>
@@ -978,6 +987,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 							lead.lid === record.lid
 								? {
 										...lead,
+										wdsNo: record.wdsNo,
 										wdsDateSubmitted: record.dateSubmitted,
 										wdsStatus: record.status,
 										wdsDateApproved: record.dateApproved,
