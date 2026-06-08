@@ -791,18 +791,18 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 									const groupTop = inGroup && isGroupStart;
 									const groupBottom = inGroup && isGroupEnd;
 									const groupBorderFirst = joinClasses(
-										inGroup ? "border-l-2 border-l-slate-900" : undefined,
-										groupTop ? "border-t-2 border-t-slate-900" : undefined,
-										groupBottom ? "border-b-2 border-b-slate-900" : undefined,
+										inGroup ? "border-l-2 border-l-slate-200" : undefined,
+										groupTop ? "border-t-2 border-t-slate-200" : undefined,
+										groupBottom ? "border-b-2 border-b-slate-200" : undefined,
 									);
 									const groupBorderLast = joinClasses(
-										inGroup ? "border-r-2 border-r-slate-900" : undefined,
-										groupTop ? "border-t-2 border-t-slate-900" : undefined,
-										groupBottom ? "border-b-2 border-b-slate-900" : undefined,
+										inGroup ? "border-r-2 border-r-slate-200" : undefined,
+										groupTop ? "border-t-2 border-t-slate-200" : undefined,
+										groupBottom ? "border-b-2 border-b-slate-200" : undefined,
 									);
 									const groupBorderMid = joinClasses(
-										groupTop ? "border-t-2 border-t-slate-900" : undefined,
-										groupBottom ? "border-b-2 border-b-slate-900" : undefined,
+										groupTop ? "border-t-2 border-t-slate-200" : undefined,
+										groupBottom ? "border-b-2 border-b-slate-200" : undefined,
 									);
 									return (
 									<tr key={`${lead.lid}-${lead.streamNo ?? "x"}`} className={joinClasses("bg-white transition hover:bg-slate-50/80", inGroup ? "bg-slate-50/30" : undefined)}>
