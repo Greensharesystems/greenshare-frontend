@@ -101,6 +101,7 @@ export default function Home() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isPending, startTransition] = useTransition();
 
 	useEffect(() => {
@@ -114,6 +115,10 @@ export default function Home() {
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setErrorMessage("");
+		setIsSubmitting(true);
+
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
 		try {
 			const response = await fetch(getApiUrl("/auth/login"), {
@@ -122,6 +127,7 @@ export default function Home() {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({ email, password }),
+				signal: controller.signal,
 			});
 
 			const payload = (await response.json()) as {
@@ -136,6 +142,7 @@ export default function Home() {
 
 			if (!response.ok) {
 				setErrorMessage(payload.detail ?? "Unable to sign in with those credentials.");
+				setIsSubmitting(false);
 				return;
 			}
 
@@ -146,6 +153,7 @@ export default function Home() {
 				|| typeof payload.access_token !== "string"
 			) {
 				setErrorMessage("Your account role is not recognized.");
+				setIsSubmitting(false);
 				return;
 			}
 
@@ -166,8 +174,15 @@ export default function Home() {
 			startTransition(() => {
 				router.push(getRoleHomeRoute(authenticatedRole));
 			});
-		} catch {
-			setErrorMessage("Unable to reach the Greenshare backend.");
+		} catch (err) {
+			if (err instanceof Error && err.name === "AbortError") {
+				setErrorMessage("The server is not responding. Please try again in a moment.");
+			} else {
+				setErrorMessage("Unable to reach the Greenshare backend.");
+			}
+		} finally {
+			clearTimeout(timeoutId);
+			setIsSubmitting(false);
 		}
 	}
 
@@ -336,10 +351,10 @@ export default function Home() {
 
 								<button
 									type="submit"
-									disabled={isPending}
+									disabled={isSubmitting || isPending}
 									className="w-full rounded-2xl bg-[#36B44D] px-4 py-3.5 text-base font-semibold text-white shadow-[0_16px_32px_rgba(54,180,77,0.22)] transition hover:bg-[#2fa044] focus:outline-none focus:ring-4 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-[#8ad39a]"
 								>
-									{isPending ? "Opening dashboard..." : "Log in"}
+									{isSubmitting ? "Signing in..." : isPending ? "Opening dashboard..." : "Log in"}
 								</button>
 							</form>
 						</div>
