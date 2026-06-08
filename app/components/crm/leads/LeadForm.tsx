@@ -1,9 +1,27 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import Button from "@/app/components/ui/Button";
 import { searchCustomers } from "@/app/services/customers.service";
+
+type StreamFormData = {
+	wasteStreamName: string;
+	wasteClass: "Hazardous" | "Non Hazardous" | "Others" | "";
+	otherWasteClass: string;
+	estimatedQuantity: string;
+	unit: "Tons" | "Kgs" | "Liters" | "Metric Tons" | "Others" | "";
+	otherUnit: string;
+};
+
+const INITIAL_STREAM: StreamFormData = {
+	wasteStreamName: "",
+	wasteClass: "",
+	otherWasteClass: "",
+	estimatedQuantity: "",
+	unit: "",
+	otherUnit: "",
+};
 
 export type LeadFormData = Readonly<{
 	cid: string;
@@ -14,12 +32,15 @@ export type LeadFormData = Readonly<{
 	referralName: string;
 	assignedTo: string;
 	assignedPersonName: string;
-	wasteStream: string;
-	wasteClass: "Hazardous" | "Non Hazardous" | "Others";
-	otherWasteClass: string;
-	estimatedQuantity: string;
-	unit: string;
-	otherUnit: string;
+	streams: ReadonlyArray<Readonly<{
+		streamNo: string;
+		wasteStreamName: string;
+		wasteClass: "Hazardous" | "Non Hazardous" | "Others";
+		otherWasteClass: string;
+		estimatedQuantity: string;
+		unit: string;
+		otherUnit: string;
+	}>>;
 	leadId: string;
 	leadDate: string;
 	comments: string;
@@ -39,12 +60,7 @@ type LeadFormState = {
 	referralName: string;
 	assignedTo: string;
 	assignedPersonName: string;
-	wasteStream: string;
-	wasteClass: "Hazardous" | "Non Hazardous" | "Others" | "";
-	otherWasteClass: string;
-	estimatedQuantity: string;
-	unit: "Tons" | "Kgs" | "Liters" | "Metric Tons" | "Others" | "";
-	otherUnit: string;
+	streams: StreamFormData[];
 	leadId: string;
 	leadDate: string;
 	comments: string;
@@ -77,12 +93,7 @@ const INITIAL_FORM_STATE: LeadFormState = {
 	referralName: "",
 	assignedTo: "",
 	assignedPersonName: "",
-	wasteStream: "",
-	wasteClass: "",
-	otherWasteClass: "",
-	estimatedQuantity: "",
-	unit: "",
-	otherUnit: "",
+	streams: [{ ...INITIAL_STREAM }],
 	leadId: "",
 	leadDate: "",
 	comments: "",
@@ -112,22 +123,29 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadF
 	const isReferralSource = formState.source === "Referral";
 	const isOtherSource = formState.source === "Other";
 	const isOtherAssignee = formState.assignedTo === "Other";
-	const isOtherWasteClass = formState.wasteClass === "Others";
-	const isOtherUnit = formState.unit === "Others";
 	const hasCustomerIdentity = Boolean(formState.cid.trim() && formState.customerName.trim());
 	const hasGeneratedLead = Boolean(formState.leadId && formState.leadDate);
-	const hasEstimatedQuantity = Boolean(formState.estimatedQuantity.trim()) && Number.isFinite(Number(formState.estimatedQuantity));
+
+	const streamsValid =
+		formState.streams.length > 0 &&
+		formState.streams.every((s) => {
+			const hasQty = Boolean(s.estimatedQuantity.trim()) && Number.isFinite(Number(s.estimatedQuantity));
+			return (
+				Boolean(s.wasteStreamName.trim()) &&
+				Boolean(s.wasteClass) &&
+				(s.wasteClass !== "Others" || Boolean(s.otherWasteClass.trim())) &&
+				hasQty &&
+				Boolean(s.unit) &&
+				(s.unit !== "Others" || Boolean(s.otherUnit.trim()))
+			);
+		});
+
 	const isFormValid =
 		hasCustomerIdentity &&
 		Boolean(formState.source) &&
 		(!isOtherSource || Boolean(formState.otherSource.trim())) &&
 		Boolean(formState.assignedTo) &&
-		Boolean(formState.wasteStream.trim()) &&
-		Boolean(formState.wasteClass) &&
-		(!isOtherWasteClass || Boolean(formState.otherWasteClass.trim())) &&
-		hasEstimatedQuantity &&
-		Boolean(formState.unit) &&
-		(!isOtherUnit || Boolean(formState.otherUnit.trim())) &&
+		streamsValid &&
 		hasGeneratedLead &&
 		(!isTransporterSource || Boolean(formState.transporterName.trim())) &&
 		(!isReferralSource || Boolean(formState.referralName.trim())) &&
@@ -229,12 +247,15 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadF
 			referralName: formState.referralName.trim(),
 			assignedTo: formState.assignedTo,
 			assignedPersonName: formState.assignedPersonName.trim(),
-			wasteStream: formState.wasteStream.trim(),
-			wasteClass: formState.wasteClass as LeadFormData["wasteClass"],
-			otherWasteClass: formState.otherWasteClass.trim(),
-			estimatedQuantity: formState.estimatedQuantity.trim(),
-			unit: formState.unit,
-			otherUnit: formState.otherUnit.trim(),
+			streams: formState.streams.map((s, i) => ({
+				streamNo: `SN-${String(i + 1).padStart(3, "0")}`,
+				wasteStreamName: s.wasteStreamName.trim(),
+				wasteClass: s.wasteClass as "Hazardous" | "Non Hazardous" | "Others",
+				otherWasteClass: s.otherWasteClass.trim(),
+				estimatedQuantity: s.estimatedQuantity.trim(),
+				unit: s.unit,
+				otherUnit: s.otherUnit.trim(),
+			})),
 			leadId: formState.leadId,
 			leadDate: formState.leadDate,
 			comments: formState.comments.trim(),
@@ -261,6 +282,33 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadF
 		}));
 	}
 
+	function updateStream(index: number, key: keyof StreamFormData, value: string) {
+		setFormState((current) => {
+			const streams = current.streams.map((s, i) => {
+				if (i !== index) return s;
+				const updated = { ...s, [key]: value };
+				if (key === "wasteClass" && value !== "Others") updated.otherWasteClass = "";
+				if (key === "unit" && value !== "Others") updated.otherUnit = "";
+				return updated;
+			});
+			return { ...current, streams };
+		});
+	}
+
+	function addStream() {
+		setFormState((current) => ({
+			...current,
+			streams: [...current.streams, { ...INITIAL_STREAM }],
+		}));
+	}
+
+	function removeStream(index: number) {
+		setFormState((current) => ({
+			...current,
+			streams: current.streams.filter((_, i) => i !== index),
+		}));
+	}
+
 	function handleSourceChange(value: string) {
 		setFormState((current) => ({
 			...current,
@@ -271,27 +319,11 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadF
 		}));
 	}
 
-	function handleUnitChange(value: LeadFormState["unit"]) {
-		setFormState((current) => ({
-			...current,
-			unit: value,
-			otherUnit: value === "Others" ? current.otherUnit : "",
-		}));
-	}
-
 	function handleAssignedToChange(value: string) {
 		setFormState((current) => ({
 			...current,
 			assignedTo: value,
 			assignedPersonName: value === "Other" ? current.assignedPersonName : "",
-		}));
-	}
-
-	function handleWasteClassChange(value: LeadFormState["wasteClass"]) {
-		setFormState((current) => ({
-			...current,
-			wasteClass: value,
-			otherWasteClass: value === "Others" ? current.otherWasteClass : "",
 		}));
 	}
 
@@ -535,90 +567,6 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadF
 							</label>
 						</div>
 
-						<label className="flex flex-col gap-1.5">
-							<span className="text-sm font-medium text-slate-700">Waste Stream</span>
-							<input
-								name="wasteStream"
-								value={formState.wasteStream}
-								onChange={(event) => updateField("wasteStream", event.target.value)}
-								placeholder="Enter waste stream"
-								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-							/>
-						</label>
-
-						<label className="flex flex-col gap-1.5">
-							<span className="text-sm font-medium text-slate-700">Est. Qty</span>
-							<input
-								name="estimatedQuantity"
-								type="number"
-								min="0"
-								step="any"
-								inputMode="decimal"
-								value={formState.estimatedQuantity}
-								onChange={(event) => updateField("estimatedQuantity", event.target.value)}
-								placeholder="Enter estimated quantity"
-								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-							/>
-						</label>
-
-						<label className="flex flex-col gap-1.5">
-							<span className="text-sm font-medium text-slate-700">Unit</span>
-							<select
-								name="unit"
-								value={formState.unit}
-								onChange={(event) => handleUnitChange(event.target.value as LeadFormState["unit"])}
-								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-							>
-								<option value="">Select unit</option>
-								{UNIT_OPTIONS.map((option) => (
-									<option key={option} value={option}>
-										{option}
-									</option>
-								))}
-							</select>
-						</label>
-
-						<div className={`overflow-hidden transition-all duration-200 ${isOtherUnit ? "max-h-24 opacity-100" : "max-h-0 opacity-0"}`}>
-							<label className="flex flex-col gap-1.5">
-								<span className="text-sm font-medium text-slate-700">Other Unit</span>
-								<input
-									name="otherUnit"
-									value={formState.otherUnit}
-									onChange={(event) => updateField("otherUnit", event.target.value)}
-									placeholder="Enter other unit"
-									className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-								/>
-							</label>
-						</div>
-
-						<label className="flex flex-col gap-1.5">
-							<span className="text-sm font-medium text-slate-700">Class</span>
-							<select
-								name="wasteClass"
-								value={formState.wasteClass}
-								onChange={(event) => handleWasteClassChange(event.target.value as LeadFormState["wasteClass"])}
-								className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-							>
-								<option value="">Select class</option>
-								<option value="Hazardous">Hazardous</option>
-								<option value="Non Hazardous">Non Hazardous</option>
-								<option value="Others">Others</option>
-							</select>
-						</label>
-
-						<div className={`overflow-hidden transition-all duration-200 ${isOtherWasteClass ? "max-h-24 opacity-100" : "max-h-0 opacity-0 sm:col-span-2"}`}>
-							<label className="flex flex-col gap-1.5">
-								<span className="text-sm font-medium text-slate-700">Other Class</span>
-								<input
-									name="otherWasteClass"
-									value={formState.otherWasteClass}
-									onChange={(event) => updateField("otherWasteClass", event.target.value)}
-									placeholder="Enter other class"
-									className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-								/>
-							</label>
-						</div>
-
 						<div className="flex flex-col gap-1.5 sm:col-span-2">
 							<span className="text-sm font-medium text-slate-700">Lead ID</span>
 							<div className="flex flex-col gap-3 sm:flex-row">
@@ -658,7 +606,134 @@ export default function LeadForm({ onSubmit, onCancel, onGenerateLeadId }: LeadF
 							/>
 						</label>
 					</div>
-					{showValidation && !isFormValid ? (
+				</section>
+
+				<section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-100/70">
+					<div className="mb-4 flex items-center justify-between">
+						<div>
+							<h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-600">Waste Streams</h3>
+							<p className="mt-1 text-sm text-slate-500">Add one or more waste streams for this lead.</p>
+						</div>
+						<button
+							type="button"
+							onClick={addStream}
+							disabled={isSubmitting}
+							className="flex items-center gap-1.5 rounded-xl border border-[#36B44D]/30 bg-[#36B44D]/5 px-3 py-1.5 text-xs font-semibold text-[#36B44D] transition hover:bg-[#36B44D]/10 disabled:opacity-50"
+						>
+							<span className="text-base leading-none">+</span>
+							Add Stream
+						</button>
+					</div>
+
+					<div className="space-y-4">
+						{formState.streams.map((stream, index) => (
+							<div key={index} className="relative rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+								<div className="mb-3 flex items-center justify-between">
+									<span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+										Stream {String(index + 1).padStart(3, "0")} â€” {`SN-${String(index + 1).padStart(3, "0")}`}
+									</span>
+									{formState.streams.length > 1 ? (
+										<button
+											type="button"
+											onClick={() => removeStream(index)}
+											disabled={isSubmitting}
+											className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+										>
+											<span className="text-sm leading-none">Ã—</span>
+											Remove
+										</button>
+									) : null}
+								</div>
+
+								<div className="grid gap-4 sm:grid-cols-2">
+									<label className="flex flex-col gap-1.5 sm:col-span-2">
+										<span className="text-sm font-medium text-slate-700">Waste Stream Name</span>
+										<input
+											value={stream.wasteStreamName}
+											onChange={(e) => updateStream(index, "wasteStreamName", e.target.value)}
+											placeholder="e.g. Paint Cans, Used Engine Oil"
+											className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
+										/>
+									</label>
+
+									<label className="flex flex-col gap-1.5">
+										<span className="text-sm font-medium text-slate-700">Est. Qty</span>
+										<input
+											type="number"
+											min="0"
+											step="any"
+											inputMode="decimal"
+											value={stream.estimatedQuantity}
+											onChange={(e) => updateStream(index, "estimatedQuantity", e.target.value)}
+											placeholder="Enter estimated quantity"
+											className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
+										/>
+									</label>
+
+									<label className="flex flex-col gap-1.5">
+										<span className="text-sm font-medium text-slate-700">Unit</span>
+										<select
+											value={stream.unit}
+											onChange={(e) => updateStream(index, "unit", e.target.value)}
+											className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
+										>
+											<option value="">Select unit</option>
+											{UNIT_OPTIONS.map((option) => (
+												<option key={option} value={option}>
+													{option}
+												</option>
+											))}
+										</select>
+									</label>
+
+									{stream.unit === "Others" ? (
+										<label className="flex flex-col gap-1.5 sm:col-span-2">
+											<span className="text-sm font-medium text-slate-700">Other Unit</span>
+											<input
+												value={stream.otherUnit}
+												onChange={(e) => updateStream(index, "otherUnit", e.target.value)}
+												placeholder="Enter other unit"
+												className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
+											/>
+										</label>
+									) : null}
+
+									<label className="flex flex-col gap-1.5">
+										<span className="text-sm font-medium text-slate-700">Class</span>
+										<select
+											value={stream.wasteClass}
+											onChange={(e) => updateStream(index, "wasteClass", e.target.value)}
+											className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
+										>
+											<option value="">Select class</option>
+											<option value="Hazardous">Hazardous</option>
+											<option value="Non Hazardous">Non Hazardous</option>
+											<option value="Others">Others</option>
+										</select>
+									</label>
+
+									{stream.wasteClass === "Others" ? (
+										<label className="flex flex-col gap-1.5">
+											<span className="text-sm font-medium text-slate-700">Other Class</span>
+											<input
+												value={stream.otherWasteClass}
+												onChange={(e) => updateStream(index, "otherWasteClass", e.target.value)}
+												placeholder="Enter other class"
+												className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:ring-4 focus:ring-[#36B44D]/20"
+											/>
+										</label>
+									) : null}
+								</div>
+							</div>
+						))}
+					</div>
+
+					{showValidation && !streamsValid ? (
+						<p className="mt-4 text-sm text-rose-600">
+							Each waste stream requires a name, class, estimated quantity, and unit.
+						</p>
+					) : null}
+					{showValidation && !isFormValid && streamsValid ? (
 						<p className="mt-4 text-sm text-rose-600">
 							Complete all required fields, including generating a Lead ID and any conditional names, before adding the lead.
 						</p>
@@ -690,7 +765,7 @@ function formatLeadDate(date: Date) {
 
 function resolveErrorMessage(error: unknown, fallbackMessage: string) {
 	// TypeError means a network failure (CORS block, no connection, etc.)
-	// — the raw browser message ("Failed to fetch") is not useful to the user.
+	// â€” the raw browser message ("Failed to fetch") is not useful to the user.
 	if (error instanceof TypeError) {
 		return fallbackMessage;
 	}
@@ -701,3 +776,4 @@ function resolveErrorMessage(error: unknown, fallbackMessage: string) {
 
 	return fallbackMessage;
 }
+

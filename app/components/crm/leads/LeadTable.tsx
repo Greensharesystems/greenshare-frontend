@@ -9,7 +9,7 @@ import LabStatusDrawer from "@/components/crm/leads/LabStatusDrawer";
 import LeadStatusDrawer from "@/components/crm/leads/LeadStatusDrawer";
 import ProposalStatusDrawer from "@/components/crm/leads/ProposalStatusDrawer";
 import WdsStatusDrawer from "@/components/crm/leads/WdsStatusDrawer";
-import type { CrmLabStatusRecord, CrmLeadStatusRecord, CrmProposalStatusRecord, CrmWdsStatusRecord } from "@/app/services/crm-leads.service";
+import type { CrmLabStreamStatusRecord, CrmLeadStatusRecord, CrmProposalStatusRecord, CrmWdsStatusRecord } from "@/app/services/crm-leads.service";
 
 export type LeadLifecycleStatus = "Open" | "Won" | "Lost" | "Other";
 export type LabStatus = "Accept" | "Reject" | "Not Applicable" | "Other" | "Pending" | "Approved" | "Rejected";
@@ -25,6 +25,7 @@ export type LeadRecord = Readonly<{
 	date: string;
 	leadGeneratedDate: string;
 	lid: string;
+	streamNo: string | null;
 	source: string;
 	assignedTo: Assignee;
 	cid: string;
@@ -34,11 +35,9 @@ export type LeadRecord = Readonly<{
 	otherWasteClass?: string | null;
 	estimatedQuantity: number;
 	unit: string;
-	labId: string;
 	labStatus: LabStatus;
 	labStatusDays: number;
 	labUpdatedDate: string;
-	proposalId: string | null;
 	proposalStatus: ProposalStatus;
 	proposalStatusDays: number;
 	proposalUpdatedDate: string;
@@ -80,7 +79,7 @@ const DEFAULT_FILTERS: FilterState = {
 };
 
 const ROWS_PER_PAGE_OPTIONS = [20, 10, 5] as const;
-const DATA_COLUMN_COUNT = 24;
+const DATA_COLUMN_COUNT = 23;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 const LAB_STATUS_DAY_OFFSETS = [3, 2, 4, 1, 5, 2, 6, 1, 3, 4, 7, 1, 5, 2, 4, 6, 1, 2, 3, 4] as const;
@@ -124,6 +123,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "07-05-2026",
 		lid: "LID-0001",
+		streamNo: "SN-001",
 		source: "Website",
 		assignedTo: { initials: "AK", name: "Ahmed Khan" },
 		cid: "CID-0001",
@@ -133,9 +133,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 50,
 		unit: "Tons",
-		labId: "LAB-0001",
 		labStatus: "Approved",
-		proposalId: "PID-0001",
 		proposalStatus: "Sent",
 		status: "Open",
 		labStatusDays: 0,
@@ -145,6 +143,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "08-05-2026",
 		lid: "LID-0002",
+		streamNo: "SN-001",
 		source: "Referral",
 		assignedTo: { initials: "SA", name: "Sara Ali" },
 		cid: "CID-0002",
@@ -154,10 +153,8 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 120,
 		unit: "Drums",
-		labId: "LAB-0002",
 		labStatus: "Pending",
-		proposalId: null,
-		proposalStatus: "Draft",
+		proposalStatus: "Pending",
 		status: "Open",
 		labStatusDays: 0,
 		proposalStatusDays: 0,
@@ -166,6 +163,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "09-05-2026",
 		lid: "LID-0003",
+		streamNo: "SN-001",
 		source: "Sales Visit",
 		assignedTo: { initials: "IG", name: "Imran Gill" },
 		cid: "CID-0003",
@@ -175,9 +173,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 18,
 		unit: "Tons",
-		labId: "LAB-0003",
 		labStatus: "Approved",
-		proposalId: "PID-0002",
 		proposalStatus: "Accepted",
 		status: "Won",
 		labStatusDays: 0,
@@ -187,6 +183,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "10-05-2026",
 		lid: "LID-0004",
+		streamNo: "SN-001",
 		source: "WhatsApp",
 		assignedTo: { initials: "LT", name: "Lab Team" },
 		cid: "CID-0004",
@@ -196,9 +193,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 7,
 		unit: "IBCs",
-		labId: "LAB-0004",
-		labStatus: "Rejected",
-		proposalId: null,
+		labStatus: "Reject",
 		proposalStatus: "Not Sent",
 		status: "Lost",
 		labStatusDays: 0,
@@ -208,6 +203,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "11-05-2026",
 		lid: "LID-0005",
+		streamNo: "SN-001",
 		source: "Existing Client",
 		assignedTo: { initials: "FT", name: "Finance Team" },
 		cid: "CID-0005",
@@ -217,9 +213,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 32,
 		unit: "Tons",
-		labId: "LAB-0005",
 		labStatus: "Approved",
-		proposalId: "PID-0003",
 		proposalStatus: "Under Review",
 		status: "Open",
 		labStatusDays: 0,
@@ -229,6 +223,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "12-05-2026",
 		lid: "LID-0006",
+		streamNo: "SN-001",
 		source: "Website",
 		assignedTo: { initials: "OM", name: "Omar Malik" },
 		cid: "CID-0006",
@@ -238,9 +233,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 24,
 		unit: "Tons",
-		labId: "LAB-0006",
 		labStatus: "Pending",
-		proposalId: "PID-0004",
 		proposalStatus: "Sent",
 		status: "Open",
 		labStatusDays: 0,
@@ -250,6 +243,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "13-05-2026",
 		lid: "LID-0007",
+		streamNo: "SN-001",
 		source: "Referral",
 		assignedTo: { initials: "NK", name: "Noor Khan" },
 		cid: "CID-0007",
@@ -259,9 +253,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 40,
 		unit: "Bales",
-		labId: "LAB-0007",
 		labStatus: "Approved",
-		proposalId: "PID-0005",
 		proposalStatus: "Accepted",
 		status: "Won",
 		labStatusDays: 0,
@@ -271,6 +263,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "14-05-2026",
 		lid: "LID-0008",
+		streamNo: "SN-001",
 		source: "Sales Visit",
 		assignedTo: { initials: "RA", name: "Rashid Ahmed" },
 		cid: "CID-0008",
@@ -280,10 +273,8 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 15,
 		unit: "Tanks",
-		labId: "LAB-0008",
-		labStatus: "Rejected",
-		proposalId: null,
-		proposalStatus: "Draft",
+		labStatus: "Reject",
+		proposalStatus: "Pending",
 		status: "Lost",
 		labStatusDays: 0,
 		proposalStatusDays: 0,
@@ -292,6 +283,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "15-05-2026",
 		lid: "LID-0009",
+		streamNo: "SN-001",
 		source: "Website",
 		assignedTo: { initials: "AK", name: "Ahmed Khan" },
 		cid: "CID-0009",
@@ -301,9 +293,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 22,
 		unit: "Drums",
-		labId: "LAB-0009",
 		labStatus: "Pending",
-		proposalId: "PID-0006",
 		proposalStatus: "Under Review",
 		status: "Open",
 		labStatusDays: 0,
@@ -313,6 +303,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "16-05-2026",
 		lid: "LID-0010",
+		streamNo: "SN-001",
 		source: "Referral",
 		assignedTo: { initials: "SA", name: "Sara Ali" },
 		cid: "CID-0010",
@@ -322,9 +313,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 14,
 		unit: "Bales",
-		labId: "LAB-0010",
 		labStatus: "Approved",
-		proposalId: "PID-0007",
 		proposalStatus: "Sent",
 		status: "Open",
 		labStatusDays: 0,
@@ -334,6 +323,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "17-05-2026",
 		lid: "LID-0011",
+		streamNo: "SN-001",
 		source: "Sales Visit",
 		assignedTo: { initials: "IG", name: "Imran Gill" },
 		cid: "CID-0011",
@@ -343,9 +333,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 9,
 		unit: "Bags",
-		labId: "LAB-0011",
 		labStatus: "Approved",
-		proposalId: "PID-0008",
 		proposalStatus: "Accepted",
 		status: "Won",
 		labStatusDays: 0,
@@ -355,6 +343,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "18-05-2026",
 		lid: "LID-0012",
+		streamNo: "SN-001",
 		source: "WhatsApp",
 		assignedTo: { initials: "LT", name: "Lab Team" },
 		cid: "CID-0012",
@@ -364,9 +353,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 11,
 		unit: "IBCs",
-		labId: "LAB-0012",
-		labStatus: "Rejected",
-		proposalId: null,
+		labStatus: "Reject",
 		proposalStatus: "Not Sent",
 		status: "Lost",
 		labStatusDays: 0,
@@ -376,6 +363,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "19-05-2026",
 		lid: "LID-0013",
+		streamNo: "SN-001",
 		source: "Existing Client",
 		assignedTo: { initials: "FT", name: "Finance Team" },
 		cid: "CID-0013",
@@ -385,9 +373,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 27,
 		unit: "Tons",
-		labId: "LAB-0013",
 		labStatus: "Approved",
-		proposalId: "PID-0009",
 		proposalStatus: "Under Review",
 		status: "Open",
 		labStatusDays: 0,
@@ -397,6 +383,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "20-05-2026",
 		lid: "LID-0014",
+		streamNo: "SN-001",
 		source: "Website",
 		assignedTo: { initials: "OM", name: "Omar Malik" },
 		cid: "CID-0014",
@@ -406,10 +393,8 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 35,
 		unit: "Drums",
-		labId: "LAB-0014",
 		labStatus: "Pending",
-		proposalId: "PID-0010",
-		proposalStatus: "Draft",
+		proposalStatus: "Pending",
 		status: "Open",
 		labStatusDays: 0,
 		proposalStatusDays: 0,
@@ -418,6 +403,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "21-05-2026",
 		lid: "LID-0015",
+		streamNo: "SN-001",
 		source: "Referral",
 		assignedTo: { initials: "NK", name: "Noor Khan" },
 		cid: "CID-0015",
@@ -427,9 +413,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 19,
 		unit: "Bins",
-		labId: "LAB-0015",
 		labStatus: "Approved",
-		proposalId: "PID-0011",
 		proposalStatus: "Sent",
 		status: "Open",
 		labStatusDays: 0,
@@ -439,6 +423,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "22-05-2026",
 		lid: "LID-0016",
+		streamNo: "SN-001",
 		source: "Sales Visit",
 		assignedTo: { initials: "RA", name: "Rashid Ahmed" },
 		cid: "CID-0016",
@@ -448,9 +433,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 41,
 		unit: "Tons",
-		labId: "LAB-0016",
 		labStatus: "Approved",
-		proposalId: "PID-0012",
 		proposalStatus: "Accepted",
 		status: "Won",
 		labStatusDays: 0,
@@ -460,6 +443,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "23-05-2026",
 		lid: "LID-0017",
+		streamNo: "SN-001",
 		source: "Website",
 		assignedTo: { initials: "AK", name: "Ahmed Khan" },
 		cid: "CID-0017",
@@ -469,9 +453,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 13,
 		unit: "Boxes",
-		labId: "LAB-0017",
-		labStatus: "Rejected",
-		proposalId: null,
+		labStatus: "Reject",
 		proposalStatus: "Not Sent",
 		status: "Lost",
 		labStatusDays: 0,
@@ -481,6 +463,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "24-05-2026",
 		lid: "LID-0018",
+		streamNo: "SN-001",
 		source: "Existing Client",
 		assignedTo: { initials: "SA", name: "Sara Ali" },
 		cid: "CID-0018",
@@ -490,10 +473,8 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 29,
 		unit: "Bales",
-		labId: "LAB-0018",
 		labStatus: "Pending",
-		proposalId: "PID-0013",
-		proposalStatus: "Draft",
+		proposalStatus: "Pending",
 		status: "Open",
 		labStatusDays: 0,
 		proposalStatusDays: 0,
@@ -502,6 +483,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "25-05-2026",
 		lid: "LID-0019",
+		streamNo: "SN-001",
 		source: "WhatsApp",
 		assignedTo: { initials: "OM", name: "Omar Malik" },
 		cid: "CID-0019",
@@ -511,9 +493,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 8,
 		unit: "Bags",
-		labId: "LAB-0019",
 		labStatus: "Pending",
-		proposalId: "PID-0014",
 		proposalStatus: "Under Review",
 		status: "Open",
 		labStatusDays: 0,
@@ -523,6 +503,7 @@ const baseLeadRows: BaseLeadRecord[] = [
 	{
 		date: "26-05-2026",
 		lid: "LID-0020",
+		streamNo: "SN-001",
 		source: "Referral",
 		assignedTo: { initials: "RA", name: "Rashid Ahmed" },
 		cid: "CID-0020",
@@ -532,17 +513,14 @@ const baseLeadRows: BaseLeadRecord[] = [
 		otherWasteClass: null,
 		estimatedQuantity: 16,
 		unit: "Drums",
-		labId: "LAB-0020",
 		labStatus: "Approved",
-		proposalId: "PID-0015",
 		proposalStatus: "Sent",
 		status: "Open",
 		labStatusDays: 0,
 		proposalStatusDays: 0,
 		leadStatusDays: 0,
 	},
-	];
-
+];
 export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => ({
 	...lead,
 	leadGeneratedDate: lead.date,
@@ -560,11 +538,41 @@ export const initialLeadRows: LeadRecord[] = baseLeadRows.map((lead, index) => (
 }));
 
 type DrawerState =
-	| { type: "lab"; lid: string; initialData: CrmLabStatusRecord | null }
+	| { type: "lab"; lid: string; streamNo: string; initialData: CrmLabStreamStatusRecord | null }
 	| { type: "proposal"; lid: string; initialData: CrmProposalStatusRecord | null }
 	| { type: "lead"; lid: string; initialData: CrmLeadStatusRecord | null }
 	| { type: "wds"; lid: string; initialData: CrmWdsStatusRecord | null }
 	| null;
+
+type GroupedRow = Readonly<{
+	lead: LeadRecord;
+	isGroupStart: boolean;
+	isGroupEnd: boolean;
+	isSingle: boolean;
+}>;
+
+function buildGroupedRows(rows: LeadRecord[]): GroupedRow[] {
+	const result: GroupedRow[] = [];
+	let i = 0;
+	while (i < rows.length) {
+		const current = rows[i]!;
+		let groupEnd = i;
+		while (groupEnd + 1 < rows.length && rows[groupEnd + 1]!.lid === current.lid) {
+			groupEnd++;
+		}
+		const isSingle = groupEnd === i;
+		for (let j = i; j <= groupEnd; j++) {
+			result.push({
+				lead: rows[j]!,
+				isGroupStart: j === i,
+				isGroupEnd: j === groupEnd,
+				isSingle,
+			});
+		}
+		i = groupEnd + 1;
+	}
+	return result;
+}
 
 export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onRemove, showExport = false }: LeadTableProps) {
 	const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -624,6 +632,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 			"Date",
 			"Lead Generated Date",
 			"LID",
+			"Stream No.",
 			"Source",
 			"Assigned To",
 			"CID",
@@ -632,10 +641,8 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 			"Class",
 			"Est. Qty",
 			"Unit",
-			"Lab ID",
 			"Lab Status",
 			"Lab Status Days",
-			"PID",
 			"Proposal Status",
 			"Proposal Status Days",
 			"Status",
@@ -646,6 +653,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 			lead.date,
 			lead.leadGeneratedDate,
 			lead.lid,
+			lead.streamNo ?? "-",
 			lead.source,
 			lead.assignedTo.name,
 			lead.cid,
@@ -654,10 +662,8 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 			getWasteClassLabel(lead),
 			String(lead.estimatedQuantity),
 			lead.unit,
-			lead.labId,
 			lead.labStatus,
 			formatDays(lead.labStatusDays),
-			lead.proposalId ?? "-",
 			lead.proposalStatus,
 			formatDays(lead.proposalStatusDays),
 			lead.status,
@@ -717,6 +723,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 						<colgroup>
 							<col className="w-21" />
 							<col className="w-23" />
+							<col className="w-20" />
 							<col className="w-25.5" />
 							<col className="w-34.5" />
 							<col className="w-23" />
@@ -725,21 +732,24 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 							<col className="w-24.5" />
 							<col className="w-19.5" />
 							<col className="w-16" />
-							<col className="w-24" />
 							<col className="w-22" />
 							<col className="w-[4.5rem]" />
-							<col className="w-24" />
 							<col className="w-27.5" />
 							<col className="w-22" />
 							<col className="w-[4.5rem]" />
 							<col className="w-[4.5rem]" />
 							<col className="w-22" />
 							<col className="w-21" />
+							<col className="w-22" />
+							<col className="w-[4.5rem]" />
+							<col className="w-21" />
+							<col className="w-20" />
 						</colgroup>
 						<thead className="sticky top-0 z-10 bg-slate-50">
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
 								<HeaderCell rowSpan={2} label="Date" />
 								<HeaderCell rowSpan={2} label="LID" linked />
+								<HeaderCell rowSpan={2} label="Stream No." noWrap />
 								<HeaderCell rowSpan={2} label="Source" />
 								<HeaderCell rowSpan={2} label="Assigned To" />
 								<HeaderCell rowSpan={2} label="CID" linked />
@@ -748,17 +758,15 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<HeaderCell rowSpan={2} label="Class" />
 								<HeaderCell rowSpan={2} label="Est. Qty" />
 								<HeaderCell rowSpan={2} label="Unit" />
-								<GroupHeader label="Lab Status" colSpan={3} />
-								<GroupHeader label="Proposal Status" colSpan={3} />
+								<GroupHeader label="Lab Status" colSpan={2} />
+								<GroupHeader label="Proposal Status" colSpan={2} />
 								<GroupHeader label="Lead Status" colSpan={2} />
 								<GroupHeader label="WDS Status" colSpan={5} />
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-								<HeaderCell label="Lab ID" linked />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Days" centered />
-								<HeaderCell label="PID" linked />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Days" centered />
 								<HeaderCell label="Status" />
@@ -778,83 +786,114 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 									</td>
 								</tr>
 							) : (
-								paginatedLeads.map((lead) => (
-									<tr key={lead.lid} className="bg-white transition hover:bg-slate-50/80">
-										<DataCell>{lead.date}</DataCell>
-										<DataCell>
-										<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.lid} />
+								buildGroupedRows(paginatedLeads).map(({ lead, isGroupStart, isGroupEnd, isSingle }) => {
+									const inGroup = !isSingle;
+									const groupTop = inGroup && isGroupStart;
+									const groupBottom = inGroup && isGroupEnd;
+									const groupBorderFirst = joinClasses(
+										inGroup ? "border-l-2 border-l-slate-900" : undefined,
+										groupTop ? "border-t-2 border-t-slate-900" : undefined,
+										groupBottom ? "border-b-2 border-b-slate-900" : undefined,
+									);
+									const groupBorderLast = joinClasses(
+										inGroup ? "border-r-2 border-r-slate-900" : undefined,
+										groupTop ? "border-t-2 border-t-slate-900" : undefined,
+										groupBottom ? "border-b-2 border-b-slate-900" : undefined,
+									);
+									const groupBorderMid = joinClasses(
+										groupTop ? "border-t-2 border-t-slate-900" : undefined,
+										groupBottom ? "border-b-2 border-b-slate-900" : undefined,
+									);
+									return (
+									<tr key={`${lead.lid}-${lead.streamNo ?? "x"}`} className={joinClasses("bg-white transition hover:bg-slate-50/80", inGroup ? "bg-slate-50/30" : undefined)}>
+										<DataCell className={groupBorderFirst}>{isGroupStart || isSingle ? lead.date : ""}</DataCell>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.lid} /> : null}
 										</DataCell>
-										<DataCell>{lead.source}</DataCell>
-										<DataCell>
-											<div className="flex items-center gap-2 whitespace-nowrap">
-												<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-[10px] font-semibold text-white">{lead.assignedTo.initials}</span>
-												<span className="truncate">{lead.assignedTo.name}</span>
-											</div>
+										<DataCell className={groupBorderMid}>
+											{lead.streamNo ? (
+												<span className="text-[11px] font-mono font-medium text-slate-500">{lead.streamNo}</span>
+											) : (
+												<span className="text-slate-400">—</span>
+											)}
 										</DataCell>
-										<DataCell>
-										<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.cid} />
+										<DataCell className={groupBorderMid}>{isGroupStart || isSingle ? lead.source : ""}</DataCell>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<div className="flex items-center gap-2 whitespace-nowrap">
+													<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-[10px] font-semibold text-white">{lead.assignedTo.initials}</span>
+													<span className="truncate">{lead.assignedTo.name}</span>
+												</div>
+											) : null}
 										</DataCell>
-										<DataCell className="max-w-36.5 truncate">{lead.customerName}</DataCell>
-										<DataCell className="max-w-31 truncate">{lead.wasteStream}</DataCell>
-										<DataCell>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.cid} /> : null}
+										</DataCell>
+										<DataCell className={joinClasses("max-w-36.5 truncate", groupBorderMid)}>{isGroupStart || isSingle ? lead.customerName : ""}</DataCell>
+										<DataCell className={joinClasses("max-w-31 truncate", groupBorderMid)}>{lead.wasteStream}</DataCell>
+										<DataCell className={groupBorderMid}>
 											<Badge tone={badgeClasses.class[lead.wasteClass]}>{getWasteClassLabel(lead)}</Badge>
 										</DataCell>
-										<DataCell>{lead.estimatedQuantity}</DataCell>
-										<DataCell>{lead.unit}</DataCell>
-										<DataCell>
-											<button type="button" className="cursor-pointer text-left" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, initialData: null })}>
-												<RecordLink href={`${linkBase}/${lead.lid}`} value={lead.labId} />
-											</button>
-										</DataCell>
-										<DataCell>
-											<button type="button" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, initialData: null })}>
+										<DataCell className={groupBorderMid}>{lead.estimatedQuantity}</DataCell>
+										<DataCell className={groupBorderMid}>{lead.unit}</DataCell>
+										<DataCell className={groupBorderMid}>
+											<button type="button" title="Update Lab Status" onClick={() => setDrawerState({ type: "lab", lid: lead.lid, streamNo: lead.streamNo ?? "SN-001", initialData: null })}>
 												<Badge tone={badgeClasses.lab[lead.labStatus]}>{lead.labStatus}</Badge>
 											</button>
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.labStatusDays)}</DataCell>
-										<DataCell>
-											<button type="button" className="cursor-pointer text-left" title="Update Proposal Status" onClick={() => setDrawerState({ type: "proposal", lid: lead.lid, initialData: null })}>
-												{lead.proposalId ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.proposalId} /> : <span className="text-slate-400">-</span>}
-											</button>
+										<DataCell centered className={joinClasses("text-[11px] font-medium text-slate-500", groupBorderMid)}>{formatDays(lead.labStatusDays)}</DataCell>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<button type="button" title="Update Proposal Status" onClick={() => setDrawerState({ type: "proposal", lid: lead.lid, initialData: null })}>
+													<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell>
-											<button type="button" title="Update Proposal Status" onClick={() => setDrawerState({ type: "proposal", lid: lead.lid, initialData: null })}>
-												<Badge tone={badgeClasses.proposal[lead.proposalStatus]}>{lead.proposalStatus}</Badge>
-											</button>
+										<DataCell centered className={joinClasses("text-[11px] font-medium text-slate-500", groupBorderMid)}>{isGroupStart || isSingle ? formatDays(lead.proposalStatusDays) : ""}</DataCell>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<button type="button" title="Update Lead Status" onClick={() => setDrawerState({ type: "lead", lid: lead.lid, initialData: null })}>
+													<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.proposalStatusDays)}</DataCell>
-										<DataCell>
-											<button type="button" title="Update Lead Status" onClick={() => setDrawerState({ type: "lead", lid: lead.lid, initialData: null })}>
-												<Badge tone={badgeClasses.status[lead.status]}>{lead.status}</Badge>
-											</button>
+										<DataCell centered className={joinClasses("text-[11px] font-medium text-slate-500", groupBorderMid)}>{isGroupStart || isSingle ? formatDays(lead.leadStatusDays) : ""}</DataCell>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+													<span className="text-slate-500 text-[12px]">{lead.wdsNo ?? "N/A"}</span>
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">{formatDays(lead.leadStatusDays)}</DataCell>
-										<DataCell>
-											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
-												<span className="text-slate-500 text-[12px]">{lead.wdsNo ?? "N/A"}</span>
-											</button>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+													<span className="text-slate-500 text-[12px]">{lead.wdsDateSubmitted ?? "-"}</span>
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell>
-											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
-												<span className="text-slate-500 text-[12px]">{lead.wdsDateSubmitted ?? "-"}</span>
-											</button>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<button type="button" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+													<Badge tone={wdsBadgeTone(lead.wdsStatus)}>{lead.wdsStatus}</Badge>
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell>
-											<button type="button" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
-												<Badge tone={wdsBadgeTone(lead.wdsStatus)}>{lead.wdsStatus}</Badge>
-											</button>
+										<DataCell className={groupBorderMid}>
+											{isGroupStart || isSingle ? (
+												<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+													<span className="text-slate-500 text-[12px]">{lead.wdsDateApproved ?? "-"}</span>
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell>
-											<button type="button" className="cursor-pointer text-left" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
-												<span className="text-slate-500 text-[12px]">{lead.wdsDateApproved ?? "-"}</span>
-											</button>
+										<DataCell centered className={joinClasses("text-[11px] font-medium text-slate-500", groupBorderMid)}>
+											{isGroupStart || isSingle ? (
+												<button type="button" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
+													{lead.wdsStatusDays !== null ? formatDays(lead.wdsStatusDays) : "-"}
+												</button>
+											) : null}
 										</DataCell>
-										<DataCell centered className="text-[11px] font-medium text-slate-500">
-											<button type="button" title="Update WDS Status" onClick={() => setDrawerState({ type: "wds", lid: lead.lid, initialData: null })}>
-												{lead.wdsStatusDays !== null ? formatDays(lead.wdsStatusDays) : "-"}
-											</button>
-										</DataCell>
-										<DataCell centered>
+										<DataCell centered className={groupBorderLast}>
 											<div className="flex items-center justify-center gap-1.5">
 											<ActionLink href={`${linkBase}/${lead.lid}`} label="View">
 												<Eye className="h-3.5 w-3.5" />
@@ -872,7 +911,8 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 											</div>
 										</DataCell>
 									</tr>
-								))
+									);
+								})
 							)}
 						</tbody>
 					</table>
@@ -926,12 +966,13 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 				open
 				onClose={() => setDrawerState(null)}
 				lid={drawerState.lid}
+				streamNo={drawerState.streamNo}
 				initialData={drawerState.initialData}
 				onSaved={(record) => {
 					setLocalLeads((current) =>
 						current.map((lead) =>
-							lead.lid === record.lid
-								? { ...lead, labId: record.labId, labStatus: record.decision as LeadRecord["labStatus"] }
+							lead.lid === record.lid && lead.streamNo === record.streamNo
+								? { ...lead, labStatus: record.decision as LeadRecord["labStatus"] }
 								: lead,
 						),
 					);
@@ -949,7 +990,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 					setLocalLeads((current) =>
 						current.map((lead) =>
 							lead.lid === record.lid
-								? { ...lead, proposalId: record.pid || lead.proposalId, proposalStatus: record.status as LeadRecord["proposalStatus"] }
+								? { ...lead, proposalStatus: record.status as LeadRecord["proposalStatus"] }
 								: lead,
 						),
 					);

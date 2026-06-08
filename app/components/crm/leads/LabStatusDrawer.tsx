@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { updateLabStatus, type CrmLabStatusRecord } from "@/app/services/crm-leads.service";
+import { updateLabStreamStatus, type CrmLabStreamStatusRecord } from "@/app/services/crm-leads.service";
 
 type LabDecision = "Accept" | "Reject" | "Not Applicable" | "Other";
 
@@ -10,37 +10,36 @@ type LabStatusDrawerProps = Readonly<{
 	open: boolean;
 	onClose: () => void;
 	lid: string;
-	initialData: CrmLabStatusRecord | null;
-	onSaved: (record: CrmLabStatusRecord) => void;
+	streamNo: string;
+	initialData: CrmLabStreamStatusRecord | null;
+	onSaved: (record: CrmLabStreamStatusRecord) => void;
 }>;
 
 type FormState = {
-	labId: string;
 	comments: string;
 	decision: LabDecision | "";
 	otherDecision: string;
 	chemistName: string;
 };
 
-function buildInitialState(lid: string, initialData: CrmLabStatusRecord | null): FormState {
+function buildInitialState(initialData: CrmLabStreamStatusRecord | null): FormState {
 	if (initialData && initialData.decision.trim()) {
 		return {
-			labId: initialData.labId,
 			comments: initialData.comments,
 			decision: isLabDecision(initialData.decision) ? initialData.decision : "Other",
 			otherDecision: initialData.otherDecision,
 			chemistName: initialData.chemistName,
 		};
 	}
-	return { labId: "", comments: "", decision: "", otherDecision: "", chemistName: "" };
+	return { comments: "", decision: "", otherDecision: "", chemistName: "" };
 }
 
 function isLabDecision(value: string): value is LabDecision {
 	return value === "Accept" || value === "Reject" || value === "Not Applicable" || value === "Other";
 }
 
-export default function LabStatusDrawer({ open, onClose, lid, initialData, onSaved }: LabStatusDrawerProps) {
-	const [form, setForm] = useState<FormState>(() => buildInitialState(lid, initialData));
+export default function LabStatusDrawer({ open, onClose, lid, streamNo, initialData, onSaved }: LabStatusDrawerProps) {
+	const [form, setForm] = useState<FormState>(() => buildInitialState(initialData));
 	const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 	const [submitError, setSubmitError] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +50,6 @@ export default function LabStatusDrawer({ open, onClose, lid, initialData, onSav
 
 	function validate(): Partial<Record<keyof FormState, string>> {
 		const result: Partial<Record<keyof FormState, string>> = {};
-		if (!form.labId.trim()) result.labId = "LAB ID is required.";
 		if (!form.decision) result.decision = "Decision is required.";
 		if (form.decision === "Other" && !form.otherDecision.trim()) result.otherDecision = "Other Decision is required.";
 		if (!form.chemistName.trim()) result.chemistName = "Chemist Name is required.";
@@ -70,8 +68,7 @@ export default function LabStatusDrawer({ open, onClose, lid, initialData, onSav
 
 		setIsSaving(true);
 		try {
-			const saved = await updateLabStatus(lid, {
-				labId: form.labId,
+			const saved = await updateLabStreamStatus(lid, streamNo, {
 				decision: form.decision,
 				otherDecision: form.otherDecision,
 				comments: form.comments,
@@ -93,7 +90,7 @@ export default function LabStatusDrawer({ open, onClose, lid, initialData, onSav
 				<div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
 					<div>
 						<h2 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950">Lab Status</h2>
-						<p className="mt-1 text-sm text-slate-500">Update the lab analysis status for {lid}.</p>
+						<p className="mt-1 text-sm text-slate-500">Update the lab analysis status for {lid} — {streamNo}.</p>
 					</div>
 					<button
 						type="button"
@@ -110,13 +107,7 @@ export default function LabStatusDrawer({ open, onClose, lid, initialData, onSav
 				<form onSubmit={(e) => void handleSubmit(e)} className="flex flex-1 flex-col overflow-y-auto px-6 py-6">
 					<div className="grid gap-4">
 						<DrawerDisplayField label="LID" value={lid} />
-						<DrawerTextField
-							label="LAB ID"
-							value={form.labId}
-							onChange={(v) => setForm((s) => ({ ...s, labId: v }))}
-							error={errors.labId}
-							placeholder="LAB-0001"
-						/>
+						<DrawerDisplayField label="Stream No." value={streamNo} />
 						<DrawerTextAreaField
 							label="Comments"
 							value={form.comments}

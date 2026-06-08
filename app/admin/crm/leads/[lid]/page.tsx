@@ -5,13 +5,13 @@ import { useParams } from "next/navigation";
 
 import Button from "@/app/components/ui/Button";
 import {
-getLabStatus,
 getLeadById,
 getLeadStatus,
+getLeadStreams,
 getProposalStatus,
 getWdsStatus,
-type CrmLabStatusRecord,
 type CrmLeadStatusRecord,
+type CrmLeadStreamRecord,
 type CrmProposalStatusRecord,
 type CrmWdsStatusRecord,
 } from "@/app/services/crm-leads.service";
@@ -25,7 +25,7 @@ const lid = Array.isArray(params.lid) ? (params.lid[0] ?? "") : (params.lid ?? "
 const [leadRecord, setLeadRecord] = useState<LeadRecord | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [pageError, setPageError] = useState<string | null>(null);
-const [labStatus, setLabStatus] = useState<CrmLabStatusRecord | null>(null);
+const [streams, setStreams] = useState<CrmLeadStreamRecord[]>([]);
 const [proposalStatus, setProposalStatus] = useState<CrmProposalStatusRecord | null>(null);
 const [leadStatus, setLeadStatus] = useState<CrmLeadStatusRecord | null>(null);
 const [wdsStatus, setWdsStatus] = useState<CrmWdsStatusRecord | null>(null);
@@ -35,16 +35,16 @@ setIsLoading(true);
 setPageError(null);
 
 try {
-const [lead, lab, proposal, leadSt, wds] = await Promise.all([
+const [lead, streamList, proposal, leadSt, wds] = await Promise.all([
 getLeadById(lid),
-getLabStatus(lid),
+getLeadStreams(lid),
 getProposalStatus(lid),
 getLeadStatus(lid),
 getWdsStatus(lid),
 ]);
 
 setLeadRecord(lead);
-setLabStatus(lab);
+setStreams(streamList);
 setProposalStatus(proposal);
 setLeadStatus(leadSt);
 setWdsStatus(wds);
@@ -106,14 +106,25 @@ estimatedQuantity={`${leadRecord.estimatedQuantity} ${leadRecord.unit}`}
 />
 <div className="mt-6 grid gap-6 xl:grid-cols-4">
 <StatusPanelCard
-title="Lab Status"
-badge={<StatusBadge tone={getLabBadgeTone(labStatus?.decision ?? "")}>{labStatus?.decision || "Pending"}</StatusBadge>}
+title="Waste Streams"
+badge={<StatusBadge tone="bg-slate-100 text-slate-600">{streams.length} Stream{streams.length !== 1 ? "s" : ""}</StatusBadge>}
 >
-<DisplayField label="LID" value={leadRecord.lid} />
-<DisplayField label="LAB ID" value={labStatus?.labId || "-"} />
-<DisplayField label="Decision" value={labStatus ? (labStatus.decision === "Other" ? labStatus.otherDecision || "-" : labStatus.decision) : "-"} />
-<DisplayField label="Chemist Name" value={labStatus?.chemistName || "-"} />
-<DisplayField label="Comments" value={labStatus?.comments || "-"} multiline />
+{streams.length === 0 ? (
+<p className="text-sm text-slate-400">No streams recorded.</p>
+) : (
+streams.map((s) => (
+<div key={s.streamNo} className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+<div className="flex items-center justify-between">
+<span className="font-mono text-[11px] font-semibold text-slate-500">{s.streamNo}</span>
+<StatusBadge tone={getLabBadgeTone(s.labDecision)}>{s.labDecision || "Pending"}</StatusBadge>
+</div>
+<span className="text-sm font-medium text-slate-900">{s.wasteStreamName}</span>
+<span className="text-xs text-slate-500">{s.wasteClass}{s.estQty ? ` · ${s.estQty} ${s.unit}` : ""}</span>
+{s.labChemistName ? <span className="text-xs text-slate-400">Chemist: {s.labChemistName}</span> : null}
+{s.labComments ? <span className="text-xs text-slate-400 whitespace-pre-wrap">{s.labComments}</span> : null}
+</div>
+))
+)}
 </StatusPanelCard>
 
 <StatusPanelCard
@@ -121,7 +132,6 @@ title="Proposal Status"
 badge={<StatusBadge tone={getProposalBadgeTone(proposalStatus?.status ?? "")}>{proposalStatus?.status || "Pending"}</StatusBadge>}
 >
 <DisplayField label="LID" value={leadRecord.lid} />
-<DisplayField label="PID" value={proposalStatus?.pid || "-"} />
 <DisplayField label="Status" value={proposalStatus ? (proposalStatus.status === "Other" ? proposalStatus.otherStatus || "-" : proposalStatus.status) : "-"} />
 <DisplayField label="Updated By" value={proposalStatus?.updatedBy || "-"} />
 <DisplayField label="Comments" value={proposalStatus?.comments || "-"} multiline />
