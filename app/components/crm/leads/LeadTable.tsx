@@ -763,7 +763,7 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<HeaderCell label="Days" centered />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Days" centered />
-								<HeaderCell label="WDS No." />
+								<HeaderCell label="WDS No." noWrap />
 								<HeaderCell label="Date Submitted" />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Date Approved" />
@@ -1061,7 +1061,7 @@ function formatDisplayDate(value: Date) {
 	return `${day}-${month}-${year}`;
 }
 
-function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readonly<{ label: string; rowSpan?: number; linked?: boolean; centered?: boolean }>) {
+function HeaderCell({ label, rowSpan, linked = false, centered = false, noWrap = false }: Readonly<{ label: string; rowSpan?: number; linked?: boolean; centered?: boolean; noWrap?: boolean }>) {
 	return (
 		<th
 			rowSpan={rowSpan}
@@ -1071,7 +1071,7 @@ function HeaderCell({ label, rowSpan, linked = false, centered = false }: Readon
 			)}
 		>
 			<div className={joinClasses("flex items-center", centered ? "justify-center" : "justify-start", linked ? "text-slate-700" : undefined)}>
-				<span>{label}</span>
+				<span className={noWrap ? "whitespace-nowrap" : undefined}>{label}</span>
 			</div>
 		</th>
 	);
