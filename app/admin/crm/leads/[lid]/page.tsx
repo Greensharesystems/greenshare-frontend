@@ -142,10 +142,12 @@ title="WDS Status"
 badge={<StatusBadge tone={getWdsBadgeTone(wdsComputedStatus)}>{wdsComputedStatus}</StatusBadge>}
 >
 <DisplayField label="LID" value={leadRecord.lid} />
+<DisplayField label="WDS No." value={wdsStatus?.wdsNo || "N/A"} />
 <DisplayField label="Date Submitted" value={wdsStatus?.dateSubmitted || "-"} />
 <DisplayField label="Status" value={wdsComputedStatus} />
 <DisplayField label="Date Approved" value={wdsStatus?.dateApproved || "-"} />
 <DisplayField label="Days" value={wdsDays !== null ? `${wdsDays} Days` : "-"} />
+<DisplayField label="Updated By" value={wdsStatus?.updatedBy || "N/A"} />
 <DisplayField label="Comments" value={wdsStatus?.comments || "-"} multiline />
 </StatusPanelCard>
 </div>
