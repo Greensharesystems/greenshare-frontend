@@ -43,7 +43,7 @@ jobs:
           fi
 
           if [[ "$TARGET_BRANCH" == "main" ]]; then
-            echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRODUCTION }}" >> "$GITHUB_ENV"
+            echo "NEXT_PUBLIC_API_URL=https://api.greenshare.ae" >> "$GITHUB_ENV"
           else
             echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}" >> "$GITHUB_ENV"
           fi
@@ -72,7 +72,7 @@ jobs:
           output_location: ".next"
           skip_app_build: true
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL_PRODUCTION }}
+          NEXT_PUBLIC_API_URL: https://api.greenshare.ae
 
       - name: Deploy Dev Preview
         if: github.ref_name == 'dev'
