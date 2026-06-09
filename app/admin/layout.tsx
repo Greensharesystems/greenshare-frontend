@@ -20,6 +20,7 @@ const adminLinks = [
 const adminGrowthLinks = [
 	{ href: "/admin/crm/dashboard", label: "Dashboard" },
 	{ href: "/admin/crm/leads", label: "Leads" },
+	{ href: "/admin/crm/stream-codes", label: "Stream Codes" },
 	{ href: "/admin/crm/proposals", label: "Proposals" },
 ];
 
