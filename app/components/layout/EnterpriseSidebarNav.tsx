@@ -23,8 +23,8 @@ type SidebarFooterActionProps = Readonly<{
 
 const ACTIVE_CLASSES = "bg-[#EAF8ED] font-semibold text-[#34B34D]";
 const INACTIVE_CLASSES = "text-[#257632] hover:bg-[#EAF8ED] hover:text-[#34B34D]";
-const BASE_ITEM_CLASSES = "flex min-h-11 w-full max-w-full items-center overflow-hidden rounded-2xl px-1 py-2 text-left text-[11px] font-medium transition-colors duration-200 ease-in-out";
-const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center overflow-hidden rounded-2xl px-3 py-2 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
+const BASE_ITEM_CLASSES = "flex min-h-11 w-full max-w-full items-center rounded-2xl px-1.5 py-2 text-left text-[11px] font-medium transition-colors duration-200 ease-in-out";
+const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center rounded-2xl px-3 py-2 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
 
 
 export default function EnterpriseSidebarNav({ items = [], flyouts = [], pathname, extraItems = [] }: EnterpriseSidebarNavProps) {
@@ -88,8 +88,8 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 
 						return (
 							<Link key={item.href} href={item.href} className={getSubmenuItemClassName(isSubmenuActive)}>
-								<SubmenuIcon aria-hidden="true" className="mr-3 h-4 w-4 shrink-0" strokeWidth={1.9} />
-								<span className="min-w-0 truncate whitespace-nowrap">{item.label}</span>
+								<SubmenuIcon aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" strokeWidth={1.9} />
+								<span className="min-w-0 whitespace-normal leading-tight [overflow-wrap:normal] [word-break:normal]">{item.label}</span>
 							</Link>
 						);
 					})}
@@ -101,10 +101,12 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 
 
 function SidebarItemContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
+	const isSingleWord = !label.includes(" ");
+
 	return (
-		<span className="flex min-w-0 max-w-full flex-1 items-center justify-start gap-1 overflow-hidden whitespace-nowrap">
-			<Icon aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={1.9} />
-			<span className="min-w-0 truncate whitespace-nowrap leading-tight">{label}</span>
+		<span className="flex min-w-0 max-w-full flex-1 items-center justify-start gap-1.5">
+			<Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+			<span className={isSingleWord ? "min-w-0 whitespace-nowrap leading-tight" : "min-w-0 whitespace-normal leading-tight [overflow-wrap:normal] [word-break:normal]"}>{label}</span>
 		</span>
 	);
 }
