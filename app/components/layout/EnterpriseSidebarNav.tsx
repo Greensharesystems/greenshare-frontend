@@ -23,7 +23,7 @@ type SidebarFooterActionProps = Readonly<{
 
 const ACTIVE_CLASSES = "bg-[#EAF8ED] font-semibold text-[#34B34D]";
 const INACTIVE_CLASSES = "text-[#257632] hover:bg-[#EAF8ED] hover:text-[#34B34D]";
-const BASE_ITEM_CLASSES = "flex min-h-11 w-full items-center rounded-2xl px-2 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
+const BASE_ITEM_CLASSES = "flex min-h-11 w-full items-center rounded-2xl px-1.5 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
 const BASE_SUBMENU_CLASSES = "flex w-full items-center rounded-2xl px-3 py-2 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
 
 
@@ -78,7 +78,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 		<div className="group relative flex w-full justify-center">
 			<div className={getItemClassName(isActive)}>
 				<SidebarItemContent icon={TriggerIcon} label={flyout.label} />
-				<span aria-hidden="true" className="ml-auto text-[10px] text-current transition-colors duration-200 ease-in-out">
+				<span aria-hidden="true" className="ml-1 shrink-0 text-[10px] text-current transition-colors duration-200 ease-in-out">
 					&gt;
 				</span>
 			</div>
@@ -91,7 +91,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 						return (
 							<Link key={item.href} href={item.href} className={getSubmenuItemClassName(isSubmenuActive)}>
 								<SubmenuIcon aria-hidden="true" className="mr-3 h-4 w-4 shrink-0" strokeWidth={1.9} />
-								<span className="truncate">{item.label}</span>
+								<span className="whitespace-nowrap">{item.label}</span>
 							</Link>
 						);
 					})}
@@ -104,9 +104,9 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 
 function SidebarItemContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
 	return (
-		<span className="flex min-w-0 flex-1 items-center justify-start">
+		<span className="flex min-w-0 flex-1 items-center justify-start whitespace-nowrap">
 			<Icon aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" strokeWidth={1.9} />
-			<span className="min-w-0 flex-1 break-words leading-tight">{label}</span>
+			<span className="whitespace-nowrap leading-tight">{label}</span>
 		</span>
 	);
 }
