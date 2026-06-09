@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
+import { ChevronRight, type LucideIcon } from "lucide-react";
 
 import type { SidebarFlyout, SidebarNavItem } from "@/app/config/sidebarNavigation";
 
@@ -23,8 +23,8 @@ type SidebarFooterActionProps = Readonly<{
 
 const ACTIVE_CLASSES = "bg-[#EAF8ED] font-semibold text-[#34B34D]";
 const INACTIVE_CLASSES = "text-[#257632] hover:bg-[#EAF8ED] hover:text-[#34B34D]";
-const BASE_ITEM_CLASSES = "flex min-h-11 w-full items-center rounded-2xl px-1.5 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
-const BASE_SUBMENU_CLASSES = "flex w-full items-center rounded-2xl px-3 py-2 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
+const BASE_ITEM_CLASSES = "flex min-h-11 w-full max-w-full items-center overflow-hidden rounded-2xl px-1 py-2 text-left text-[11px] font-medium transition-colors duration-200 ease-in-out";
+const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center overflow-hidden rounded-2xl px-3 py-2 text-left text-xs font-medium transition-colors duration-200 ease-in-out";
 
 
 export default function EnterpriseSidebarNav({ items = [], flyouts = [], pathname, extraItems = [] }: EnterpriseSidebarNavProps) {
@@ -78,9 +78,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 		<div className="group relative flex w-full justify-center">
 			<div className={getItemClassName(isActive)}>
 				<SidebarItemContent icon={TriggerIcon} label={flyout.label} />
-				<span aria-hidden="true" className="ml-1 shrink-0 text-[10px] text-current transition-colors duration-200 ease-in-out">
-					&gt;
-				</span>
+				<ChevronRight aria-hidden="true" className="ml-0.5 h-3 w-3 shrink-0 text-current transition-colors duration-200 ease-in-out" strokeWidth={2} />
 			</div>
 			<div className="pointer-events-none invisible absolute left-full top-0 z-40 flex pl-2 opacity-0 transition-opacity duration-200 ease-in-out group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
 				<div className="flex min-w-56 flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
@@ -91,7 +89,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 						return (
 							<Link key={item.href} href={item.href} className={getSubmenuItemClassName(isSubmenuActive)}>
 								<SubmenuIcon aria-hidden="true" className="mr-3 h-4 w-4 shrink-0" strokeWidth={1.9} />
-								<span className="whitespace-nowrap">{item.label}</span>
+								<span className="min-w-0 truncate whitespace-nowrap">{item.label}</span>
 							</Link>
 						);
 					})}
@@ -104,9 +102,9 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 
 function SidebarItemContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
 	return (
-		<span className="flex min-w-0 flex-1 items-center justify-start whitespace-nowrap">
-			<Icon aria-hidden="true" className="mr-2 h-4 w-4 shrink-0" strokeWidth={1.9} />
-			<span className="whitespace-nowrap leading-tight">{label}</span>
+		<span className="flex min-w-0 max-w-full flex-1 items-center justify-start gap-1 overflow-hidden whitespace-nowrap">
+			<Icon aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={1.9} />
+			<span className="min-w-0 truncate whitespace-nowrap leading-tight">{label}</span>
 		</span>
 	);
 }
