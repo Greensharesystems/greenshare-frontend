@@ -719,45 +719,16 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 		</div>
 
 				<div className="w-full overflow-x-auto">
-					<table className="min-w-362.5 border-collapse text-left text-[12px] text-slate-700">
-						<colgroup>
-							<col className="w-21" />
-							<col className="w-23" />
-							<col className="w-20" />
-							<col className="w-25.5" />
-							<col className="w-34.5" />
-							<col className="w-23" />
-							<col className="w-36.5" />
-							<col className="w-31" />
-							<col className="w-24.5" />
-							<col className="w-19.5" />
-							<col className="w-16" />
-							<col className="w-22" />
-							<col className="w-[4.5rem]" />
-							<col className="w-27.5" />
-							<col className="w-22" />
-							<col className="w-[4.5rem]" />
-							<col className="w-[4.5rem]" />
-							<col className="w-22" />
-							<col className="w-21" />
-							<col className="w-22" />
-							<col className="w-[4.5rem]" />
-							<col className="w-21" />
-							<col className="w-20" />
-						</colgroup>
+					<table className="min-w-full table-auto border-collapse text-left text-[12px] text-slate-700">
 						<thead className="sticky top-0 z-10 bg-slate-50">
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
 								<HeaderCell rowSpan={2} label="Date" />
-								<HeaderCell rowSpan={2} label="LID" linked />
-								<HeaderCell rowSpan={2} label="Stream No." noWrap />
-								<HeaderCell rowSpan={2} label="Source" />
-								<HeaderCell rowSpan={2} label="Assigned To" />
-								<HeaderCell rowSpan={2} label="CID" linked />
-								<HeaderCell rowSpan={2} label="Customer Name" />
-								<HeaderCell rowSpan={2} label="Waste Stream" />
-								<HeaderCell rowSpan={2} label="Class" />
-								<HeaderCell rowSpan={2} label="Est. Qty" />
-								<HeaderCell rowSpan={2} label="Unit" />
+								<HeaderCell rowSpan={2} label="LID" linked noWrap className="min-w-24" />
+								<HeaderCell rowSpan={2} label="Stream No." noWrap className="min-w-24" />
+								<HeaderCell rowSpan={2} label="Source" noWrap className="min-w-28" />
+								<HeaderCell rowSpan={2} label="Assigned To" noWrap className="min-w-40" />
+								<GroupHeader label="Customer" colSpan={2} />
+								<GroupHeader label="Waste Stream" colSpan={4} />
 								<GroupHeader label="Lab Status" colSpan={2} />
 								<GroupHeader label="Proposal Status" colSpan={2} />
 								<GroupHeader label="Lead Status" colSpan={2} />
@@ -765,6 +736,12 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 								<HeaderCell rowSpan={2} label="Actions" centered />
 							</tr>
 							<tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+								<HeaderCell label="CID" linked noWrap className="min-w-30" />
+								<HeaderCell label="Customer Name" noWrap className="min-w-45" />
+								<HeaderCell label="Name" noWrap className="min-w-45" />
+								<HeaderCell label="Class" />
+								<HeaderCell label="Est. Qty" />
+								<HeaderCell label="Unit" noWrap />
 								<HeaderCell label="Status" />
 								<HeaderCell label="Days" centered />
 								<HeaderCell label="Status" />
@@ -807,30 +784,30 @@ export default function LeadTable({ leads, linkBase = "/employee/crm/leads", onR
 									return (
 									<tr key={`${lead.lid}-${lead.streamNo ?? "x"}`} className={joinClasses("bg-white transition hover:bg-slate-50/80", inGroup ? "bg-slate-50/30" : undefined)}>
 										<DataCell className={groupBorderFirst}>{isGroupStart || isSingle ? lead.date : ""}</DataCell>
-										<DataCell className={groupBorderMid}>
+										<DataCell className={joinClasses("whitespace-nowrap", groupBorderMid)}>
 											{isGroupStart || isSingle ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.lid} /> : null}
 										</DataCell>
-										<DataCell className={groupBorderMid}>
+										<DataCell className={joinClasses("whitespace-nowrap", groupBorderMid)}>
 											{lead.streamNo ? (
 												<span className="text-[11px] font-mono font-medium text-slate-500">{lead.streamNo}</span>
 											) : (
 												<span className="text-slate-400">—</span>
 											)}
 										</DataCell>
-										<DataCell className={groupBorderMid}>{isGroupStart || isSingle ? lead.source : ""}</DataCell>
-										<DataCell className={groupBorderMid}>
+										<DataCell className={joinClasses("min-w-28 whitespace-nowrap", groupBorderMid)}>{isGroupStart || isSingle ? lead.source : ""}</DataCell>
+										<DataCell className={joinClasses("min-w-40 whitespace-nowrap", groupBorderMid)}>
 											{isGroupStart || isSingle ? (
 												<div className="flex items-center gap-2 whitespace-nowrap">
 													<span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-700 text-[10px] font-semibold text-white">{lead.assignedTo.initials}</span>
-													<span className="truncate">{lead.assignedTo.name}</span>
+													<span>{lead.assignedTo.name}</span>
 												</div>
 											) : null}
 										</DataCell>
-										<DataCell className={groupBorderMid}>
+										<DataCell className={joinClasses("min-w-30 whitespace-nowrap", groupBorderMid)}>
 											{isGroupStart || isSingle ? <RecordLink href={`${linkBase}/${lead.lid}`} value={lead.cid} /> : null}
 										</DataCell>
-										<DataCell className={joinClasses("max-w-36.5 truncate", groupBorderMid)}>{isGroupStart || isSingle ? lead.customerName : ""}</DataCell>
-										<DataCell className={joinClasses("max-w-31 truncate", groupBorderMid)}>{lead.wasteStream}</DataCell>
+										<DataCell className={joinClasses("min-w-45 whitespace-nowrap", groupBorderMid)}>{isGroupStart || isSingle ? lead.customerName : ""}</DataCell>
+										<DataCell className={joinClasses("min-w-45 whitespace-nowrap", groupBorderMid)}>{lead.wasteStream}</DataCell>
 										<DataCell className={groupBorderMid}>
 											<Badge tone={badgeClasses.class[lead.wasteClass]}>{getWasteClassLabel(lead)}</Badge>
 										</DataCell>
@@ -1103,13 +1080,14 @@ function formatDisplayDate(value: Date) {
 	return `${day}-${month}-${year}`;
 }
 
-function HeaderCell({ label, rowSpan, linked = false, centered = false, noWrap = false }: Readonly<{ label: string; rowSpan?: number; linked?: boolean; centered?: boolean; noWrap?: boolean }>) {
+function HeaderCell({ label, rowSpan, linked = false, centered = false, noWrap = false, className }: Readonly<{ label: string; rowSpan?: number; linked?: boolean; centered?: boolean; noWrap?: boolean; className?: string }>) {
 	return (
 		<th
 			rowSpan={rowSpan}
 			className={joinClasses(
 				"border-b border-r border-slate-200 bg-slate-50 px-2 py-2 align-middle text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 last:border-r-0",
 				centered ? "text-center" : "text-left",
+				className,
 			)}
 		>
 			<div className={joinClasses("flex items-center", centered ? "justify-center" : "justify-start", linked ? "text-slate-700" : undefined)}>
