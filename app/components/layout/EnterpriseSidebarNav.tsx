@@ -23,9 +23,9 @@ type SidebarFooterActionProps = Readonly<{
 
 const ACTIVE_CLASSES = "bg-[#EAF8ED] font-semibold text-[#34B34D]";
 const INACTIVE_CLASSES = "text-[#257632] hover:bg-[#EAF8ED] hover:text-[#34B34D]";
-const BASE_ITEM_CLASSES = "flex min-h-11 w-full max-w-full items-center rounded-2xl px-1 py-2 text-left text-[12px] font-medium leading-tight transition-colors duration-200 ease-in-out";
-const FLYOUT_ITEM_CLASSES = "grid min-h-11 w-full max-w-full grid-cols-[minmax(0,1fr)_8px] items-center gap-0.5 rounded-2xl px-1 py-2 text-left text-[12px] font-medium leading-tight transition-colors duration-200 ease-in-out";
-const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center rounded-2xl px-3 py-2 text-left text-[12px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const BASE_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[12.5px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const FLYOUT_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[12.5px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12.5px] font-medium leading-tight transition-colors duration-200 ease-in-out";
 
 
 export default function EnterpriseSidebarNav({ items = [], flyouts = [], pathname, extraItems = [] }: EnterpriseSidebarNavProps) {
@@ -76,10 +76,9 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 	const TriggerIcon = flyout.icon;
 
 	return (
-		<div className="group relative flex w-full justify-center">
+		<div className="group relative flex w-full justify-center px-0.5">
 			<div className={getFlyoutItemClassName(isActive)}>
-				<SidebarItemContent icon={TriggerIcon} label={flyout.label} hasArrow />
-				<ChevronRight aria-hidden="true" className="h-2 w-2 shrink-0 text-current transition-colors duration-200 ease-in-out" strokeWidth={2} />
+				<SidebarFlyoutTriggerContent icon={TriggerIcon} label={flyout.label} />
 			</div>
 			<div className="pointer-events-none invisible absolute left-full top-0 z-40 flex pl-2 opacity-0 transition-opacity duration-200 ease-in-out group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100">
 				<div className="flex min-w-56 flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_12px_32px_rgba(15,23,42,0.12)]">
@@ -89,8 +88,8 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 
 						return (
 							<Link key={item.href} href={item.href} className={getSubmenuItemClassName(isSubmenuActive)}>
-								<SubmenuIcon aria-hidden="true" className="mr-2 h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
-								<span className="min-w-0 whitespace-normal leading-tight [overflow-wrap:normal] [word-break:normal]">{item.label}</span>
+								<SubmenuIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+								<span className={getLabelClassName(item.label)}>{item.label}</span>
 							</Link>
 						);
 					})}
@@ -101,18 +100,31 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 }
 
 
-function SidebarItemContent({ icon: Icon, label, hasArrow = false }: Readonly<{ icon: LucideIcon; label: string; hasArrow?: boolean }>) {
-	const isSingleWord = !label.includes(" ");
-	const contentClassName = hasArrow
-		? "grid min-w-0 max-w-full flex-1 grid-cols-[14px_minmax(0,1fr)] items-center gap-x-0.5 gap-y-0.5 text-[10.5px]"
-		: "flex min-w-0 max-w-full flex-1 items-center justify-start gap-1.5";
-
+function SidebarItemContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
 	return (
-		<span className={contentClassName}>
+		<span className="flex min-w-0 max-w-full items-center justify-start gap-1">
 			<Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
-			<span className={isSingleWord ? "min-w-0 whitespace-nowrap leading-tight" : "min-w-0 whitespace-normal leading-tight [overflow-wrap:normal] [word-break:normal]"}>{label}</span>
+			<span className={getLabelClassName(label)}>{label}</span>
 		</span>
 	);
+}
+
+
+function SidebarFlyoutTriggerContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
+	return (
+		<span className="grid min-w-0 max-w-full grid-cols-[14px_minmax(0,max-content)_12px] items-center gap-0.5">
+			<Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+			<span className={getLabelClassName(label)}>{label}</span>
+			<ChevronRight aria-hidden="true" className="h-3 w-3 shrink-0 text-current transition-colors duration-200 ease-in-out" strokeWidth={2} />
+		</span>
+	);
+}
+
+
+function getLabelClassName(label: string) {
+	return label.includes(" ")
+		? "min-w-0 whitespace-normal leading-tight [overflow-wrap:normal] [word-break:normal]"
+		: "min-w-0 whitespace-nowrap leading-tight";
 }
 
 
