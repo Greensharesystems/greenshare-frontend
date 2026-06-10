@@ -23,8 +23,8 @@ type SidebarFooterActionProps = Readonly<{
 
 const ACTIVE_CLASSES = "bg-[#EAF8ED] font-semibold text-[#34B34D]";
 const INACTIVE_CLASSES = "text-[#257632] hover:bg-[#EAF8ED] hover:text-[#34B34D]";
-const BASE_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
-const FLYOUT_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const BASE_ITEM_CLASSES = "inline-flex min-h-11 w-full max-w-[96px] items-center justify-start rounded-2xl px-0.5 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const FLYOUT_ITEM_CLASSES = "inline-flex min-h-11 w-full max-w-[96px] items-center justify-start rounded-2xl px-0.5 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
 const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
 
 
@@ -76,7 +76,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 	const TriggerIcon = flyout.icon;
 
 	return (
-		<div className="group relative flex w-full justify-center px-0.5">
+		<div className="group relative flex w-full justify-start px-0.5">
 			<div className={getFlyoutItemClassName(isActive)}>
 				<SidebarFlyoutTriggerContent icon={TriggerIcon} label={flyout.label} />
 			</div>
