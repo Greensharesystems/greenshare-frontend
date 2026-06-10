@@ -23,9 +23,9 @@ type SidebarFooterActionProps = Readonly<{
 
 const ACTIVE_CLASSES = "bg-[#EAF8ED] font-semibold text-[#34B34D]";
 const INACTIVE_CLASSES = "text-[#257632] hover:bg-[#EAF8ED] hover:text-[#34B34D]";
-const BASE_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[12.5px] font-medium leading-tight transition-colors duration-200 ease-in-out";
-const FLYOUT_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[12.5px] font-medium leading-tight transition-colors duration-200 ease-in-out";
-const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12.5px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const BASE_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const FLYOUT_ITEM_CLASSES = "inline-flex min-h-11 w-fit max-w-[96px] items-center rounded-2xl px-0.5 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
+const BASE_SUBMENU_CLASSES = "flex w-full min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-left text-[11px] font-medium leading-tight transition-colors duration-200 ease-in-out";
 
 
 export default function EnterpriseSidebarNav({ items = [], flyouts = [], pathname, extraItems = [] }: EnterpriseSidebarNavProps) {
@@ -88,7 +88,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 
 						return (
 							<Link key={item.href} href={item.href} className={getSubmenuItemClassName(isSubmenuActive)}>
-								<SubmenuIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+								<SubmenuIcon aria-hidden="true" className="h-[12.32px] w-[12.32px] shrink-0" strokeWidth={1.9} />
 								<span className={getLabelClassName(item.label)}>{item.label}</span>
 							</Link>
 						);
@@ -103,7 +103,7 @@ function SidebarFlyoutMenu({ flyout, pathname }: Readonly<{ flyout: SidebarFlyou
 function SidebarItemContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
 	return (
 		<span className="flex min-w-0 max-w-full items-center justify-start gap-1">
-			<Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+			<Icon aria-hidden="true" className="h-[12.32px] w-[12.32px] shrink-0" strokeWidth={1.9} />
 			<span className={getLabelClassName(label)}>{label}</span>
 		</span>
 	);
@@ -112,10 +112,10 @@ function SidebarItemContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; 
 
 function SidebarFlyoutTriggerContent({ icon: Icon, label }: Readonly<{ icon: LucideIcon; label: string }>) {
 	return (
-		<span className="grid min-w-0 max-w-full grid-cols-[14px_minmax(0,max-content)_12px] items-center gap-0.5">
-			<Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
+		<span className="grid min-w-0 max-w-full grid-cols-[12.32px_minmax(0,max-content)_10.56px] items-center gap-0.5">
+			<Icon aria-hidden="true" className="h-[12.32px] w-[12.32px] shrink-0" strokeWidth={1.9} />
 			<span className={getLabelClassName(label)}>{label}</span>
-			<ChevronRight aria-hidden="true" className="h-3 w-3 shrink-0 text-current transition-colors duration-200 ease-in-out" strokeWidth={2} />
+			<ChevronRight aria-hidden="true" className="h-[10.56px] w-[10.56px] shrink-0 text-current transition-colors duration-200 ease-in-out" strokeWidth={2} />
 		</span>
 	);
 }
