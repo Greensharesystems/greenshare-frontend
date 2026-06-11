@@ -47,7 +47,7 @@ export default function EmployeeLeadsPage() {
 				<div className="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
 					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 						<div className="flex flex-col gap-1">
-							<h1 className="text-3xl font-light tracking-[-0.04em] text-slate-950">Leads</h1>
+							<h1 className="text-base font-normal tracking-normal text-slate-950">Leads</h1>
 							<p className="max-w-2xl text-sm text-slate-500">Manage and track all incoming leads.</p>
 						</div>
 						<Button className="min-w-36 justify-center" onClick={() => setIsDrawerOpen(true)}>
