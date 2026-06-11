@@ -20,7 +20,7 @@ export default function EmployeeGrowthDashboardPage() {
 		<section className="min-h-[calc(100vh-54px)] bg-white py-6">
 			<div className="mx-auto w-full max-w-7xl px-6">
 				<div className="flex flex-col gap-1">
-					<h1 className="text-base font-normal tracking-normal text-slate-950">Growth Dashboard</h1>
+					<h1 className="text-xl font-normal tracking-normal text-slate-950">Growth Dashboard</h1>
 				</div>
 				<div className="mt-6 grid gap-6 xl:grid-cols-3">
 					<CustomerOverviewWidget totalCustomers={120} activeCustomers={85} newCustomersThisMonth={12} />

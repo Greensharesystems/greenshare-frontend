@@ -49,10 +49,7 @@ export default function AdminSettingsPage() {
 		<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
 				<div className="flex flex-col gap-2">
-					<h1 className="text-base font-normal tracking-normal text-slate-950">Settings</h1>
-					<p className="max-w-3xl text-sm leading-6 text-slate-600">
-						Manage the core admin configuration for reception notes, certificates, and review workflows.
-					</p>
+					<h1 className="text-xl font-normal tracking-normal text-slate-950">Settings</h1>
 				</div>
 
 				<div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
