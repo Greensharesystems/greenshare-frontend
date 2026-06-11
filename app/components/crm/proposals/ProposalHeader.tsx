@@ -8,7 +8,7 @@ export default function ProposalHeader() {
 					<p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#36B44D]">Proposal Details</p>
 					<div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
 						<div>
-							<h1 className="text-base font-normal tracking-normal text-slate-950">Green Loop Trading LLC</h1>
+							<h1 className="text-xl font-normal tracking-normal text-slate-950">Green Loop Trading LLC</h1>
 							<p className="mt-1 text-sm text-slate-500">PID-CID001-0001</p>
 						</div>
 						<div className="flex flex-wrap items-center gap-2">

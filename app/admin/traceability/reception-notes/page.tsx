@@ -21,7 +21,7 @@ export default function AdminReceptionNotesPage() {
 						</Button>
 					</div>
 					<div className="w-full max-w-4xl pt-2">
-						<h1 className="text-base font-normal tracking-normal text-slate-950">Add Reception Note</h1>
+						<h1 className="text-xl font-normal tracking-normal text-slate-950">Add Reception Note</h1>
 					</div>
 					<div aria-hidden="true" />
 					<div className="w-full max-w-4xl">
@@ -31,10 +31,7 @@ export default function AdminReceptionNotesPage() {
 			) : (
 				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
 					<div className="flex flex-col gap-2">
-						<h1 className="text-base font-normal tracking-normal text-slate-950">Reception Notes</h1>
-						<p className="max-w-3xl text-sm leading-6 text-slate-600">
-							Review note submission status, assignment, and the latest processing updates.
-						</p>
+						<h1 className="text-xl font-normal tracking-normal text-slate-950">Reception Notes</h1>
 					</div>
 
 					<div className="flex justify-end">

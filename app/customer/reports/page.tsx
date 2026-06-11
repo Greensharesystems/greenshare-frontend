@@ -26,10 +26,7 @@ export default function CustomerReportsPage() {
 		<section className="min-h-[calc(100vh-54px)] px-6 py-6">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
 				<div className="flex flex-col gap-2">
-					<h1 className="text-base font-normal tracking-normal text-slate-950">Reports</h1>
-					<p className="max-w-3xl text-sm leading-6 text-slate-600">
-						Download the dataset for quantities, certificates, and material flow.
-					</p>
+					<h1 className="text-xl font-normal tracking-normal text-slate-950">Reports</h1>
 				</div>
 
 				<WidgetShell size="md" title="Download Data">

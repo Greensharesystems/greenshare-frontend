@@ -21,7 +21,7 @@ export default function EmployeeReceptionCertificatePage() {
 						</Button>
 					</div>
 					<div className="w-full max-w-4xl pt-2">
-						<h1 className="text-base font-normal tracking-normal text-slate-950">Add Reception Certificate</h1>
+						<h1 className="text-xl font-normal tracking-normal text-slate-950">Add Reception Certificate</h1>
 					</div>
 					<div aria-hidden="true" />
 					<div className="w-full max-w-4xl">
@@ -30,11 +30,7 @@ export default function EmployeeReceptionCertificatePage() {
 				</div>
 			) : (
 				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-					<h1 className="text-base font-normal tracking-normal text-slate-950">Reception Certificate</h1>
-					<p className="max-w-3xl text-sm leading-6 text-slate-600">
-						Review and manage reception certificate activity from this employee workspace.
-					</p>
-
+					<h1 className="text-xl font-normal tracking-normal text-slate-950">Reception Certificate</h1>
 					<div className="flex justify-end">
 						<Button onClick={() => router.push("/employee/reception-certificate?mode=new")}>
 							Add Reception Certificate

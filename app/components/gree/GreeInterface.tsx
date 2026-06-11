@@ -89,7 +89,7 @@ export default function GreeInterface() {
 				<header className="border-b border-slate-200 px-6 py-5 sm:px-7">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 						<div className="space-y-1">
-							<h1 className="text-base font-normal tracking-normal text-slate-950">Gree</h1>
+							<h1 className="text-xl font-normal tracking-normal text-slate-950">Gree</h1>
 						</div>
 						<span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
 							Internal Assistant
