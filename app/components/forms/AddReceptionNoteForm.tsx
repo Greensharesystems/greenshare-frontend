@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, FocusEvent, FormEvent, MouseEvent } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Button from "@/app/components/ui/Button";
@@ -10,13 +10,26 @@ import { apiFetch } from "@/app/utils/api";
 import { formatDateForDisplay, normalizeDateString } from "@/app/utils/dateFormat";
 
 type CustomerRecord = Readonly<{
-	customerId: string;
-	companyName: string;
-	companyEmirate: string;
+	customerId?: string;
+	cid?: string;
+	companyName?: string;
+	company_name?: string;
+	companyEmirate?: string;
+	emirate?: string;
 	officeAddress?: string;
-	contactPersonName: string;
-	contactPersonEmail: string;
-	contactPersonOfficePhone: string;
+	office_address?: string;
+	officeLocation?: string;
+	office_location?: string;
+	contactPersonName?: string;
+	focal_person_name?: string;
+	name?: string;
+	contactPersonEmail?: string;
+	companyEmail?: string;
+	company_email?: string;
+	email?: string;
+	contactPersonOfficePhone?: string;
+	officePhone?: string;
+	office_phone?: string;
 }>;
 
 type AddReceptionNoteFormProps = Readonly<{
@@ -44,21 +57,24 @@ const wasteStreamFields = [
 	{ id: "name", label: "Name", type: "text", placeholder: "Enter waste stream name" },
 ] as const;
 
+const emptyProducingCompany = {
+	companyName: "",
+	emirate: "",
+	officeAddress: "",
+	contactPerson: "",
+	officePhone: "",
+	email: "",
+};
+
 export default function AddReceptionNoteForm({
 	submitLabel = "Add Reception Note",
 }: AddReceptionNoteFormProps) {
 	const router = useRouter();
 	const { session } = useAuth();
-	const [customers, setCustomers] = useState<CustomerRecord[]>([]);
 	const [cid, setCid] = useState("");
-	const [producingCompany, setProducingCompany] = useState({
-		companyName: "",
-		emirate: "",
-		officeAddress: "",
-		contactPerson: "",
-		officePhone: "",
-		email: "",
-	});
+	const [producingCompany, setProducingCompany] = useState(emptyProducingCompany);
+	const [customerLookupMessage, setCustomerLookupMessage] = useState("");
+	const [isFetchingCustomer, setIsFetchingCustomer] = useState(false);
 	const issuedBy = session?.role === "employee" ? session.displayName : "";
 	const [generatedRnid, setGeneratedRnid] = useState("");
 	const [generatedRnidDate, setGeneratedRnidDate] = useState("");
@@ -73,73 +89,55 @@ export default function AddReceptionNoteForm({
 	const [customProjectFields, setCustomProjectFields] = useState<Array<{ id: number; title: string; inputValue: string }>>([]);
 	const [nextCustomFieldId, setNextCustomFieldId] = useState(0);
 
-	useEffect(() => {
-		let isMounted = true;
-
-		async function loadCustomers() {
-			try {
-				const response = await apiFetch("/customers", {
-					cache: "no-store",
-				});
-				const payload = (await response.json()) as Array<{
-					customerId?: string;
-					companyName?: string;
-					companyEmirate?: string;
-					officeAddress?: string;
-					officeLocation?: string;
-					contactPersonName?: string;
-					contactPersonEmail?: string;
-					contactPersonOfficePhone?: string;
-				}>;
-
-				if (!response.ok || !Array.isArray(payload) || !isMounted) {
-					return;
-				}
-
-				setCustomers(
-					payload.map((customer) => ({
-						customerId: String(customer.customerId ?? ""),
-						companyName: String(customer.companyName ?? ""),
-						companyEmirate: String(customer.companyEmirate ?? ""),
-						officeAddress: String(customer.officeAddress ?? customer.officeLocation ?? ""),
-						contactPersonName: String(customer.contactPersonName ?? ""),
-						contactPersonEmail: String(customer.contactPersonEmail ?? ""),
-						contactPersonOfficePhone: String(customer.contactPersonOfficePhone ?? ""),
-					})),
-				);
-			} catch {
-				if (isMounted) {
-					setCustomers([]);
-				}
-			}
-		}
-
-		void loadCustomers();
-
-		return () => {
-			isMounted = false;
-		};
-	}, []);
-
-	useEffect(() => {
-		const matchedCustomer = getCustomerByCid(cid, customers);
-
-		setProducingCompany({
-			companyName: matchedCustomer?.companyName ?? "",
-			emirate: matchedCustomer?.companyEmirate ?? "",
-			officeAddress: matchedCustomer?.officeAddress ?? "",
-			contactPerson: matchedCustomer?.contactPersonName ?? "",
-			officePhone: matchedCustomer?.contactPersonOfficePhone ?? "",
-			email: matchedCustomer?.contactPersonEmail ?? "",
-		});
-	}, [cid, customers]);
-
 	function handleCidChange(event: ChangeEvent<HTMLInputElement>) {
 		const nextCid = event.target.value.toUpperCase();
 		setErrorMessage("");
+		setCustomerLookupMessage("");
 		setGeneratedRnid("");
 		setGeneratedRnidDate("");
 		setCid(nextCid);
+
+		if (!normalizeCustomerId(nextCid)) {
+			setProducingCompany(emptyProducingCompany);
+		}
+	}
+
+	async function handleCidBlur() {
+		const normalizedCustomerId = normalizeCustomerId(cid);
+
+		if (!normalizedCustomerId) {
+			setCustomerLookupMessage("");
+			setProducingCompany(emptyProducingCompany);
+			return;
+		}
+
+		setIsFetchingCustomer(true);
+		setCustomerLookupMessage("");
+
+		try {
+			const response = await apiFetch(`/customers/${encodeURIComponent(normalizedCustomerId)}`, {
+				cache: "no-store",
+			});
+
+			if (response.status === 404) {
+				setProducingCompany(emptyProducingCompany);
+				setCustomerLookupMessage("No customer found for this CID.");
+				return;
+			}
+
+			if (!response.ok) {
+				throw new Error(`Customer lookup failed with status ${response.status}.`);
+			}
+
+			const customer = (await response.json()) as CustomerRecord;
+			setProducingCompany(mapCustomerToProducingCompany(customer));
+		} catch (error) {
+			console.error("Unable to fetch customer details for reception note CID lookup.", error);
+			setProducingCompany(emptyProducingCompany);
+			setCustomerLookupMessage("Unable to fetch customer details.");
+		} finally {
+			setIsFetchingCustomer(false);
+		}
 	}
 
 	async function handleGenerateRnid() {
@@ -364,9 +362,16 @@ export default function AddReceptionNoteForm({
 							type="text"
 							value={cid}
 							onChange={handleCidChange}
+							onBlur={handleCidBlur}
 							placeholder="Enter customer ID"
 							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm uppercase text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 						/>
+						{isFetchingCustomer ? (
+							<span className="text-xs text-slate-500">Fetching customer details...</span>
+						) : null}
+						{customerLookupMessage ? (
+							<span className="text-xs text-rose-600">{customerLookupMessage}</span>
+						) : null}
 					</label>
 				</div>
 			</section>
@@ -773,14 +778,19 @@ function toProducingCompanyKey(fieldId: (typeof producingCompanyFields)[number][
 	return keyMap[fieldId];
 }
 
-function getCustomerByCid(cid: string, customers: CustomerRecord[]) {
-	const normalizedCustomerId = normalizeCustomerId(cid);
+function mapCustomerToProducingCompany(customer: CustomerRecord) {
+	return {
+		companyName: getCustomerField(customer.companyName, customer.company_name),
+		emirate: getCustomerField(customer.companyEmirate, customer.emirate),
+		officeAddress: getCustomerField(customer.officeAddress, customer.officeLocation, customer.office_address, customer.office_location),
+		contactPerson: getCustomerField(customer.contactPersonName, customer.focal_person_name, customer.name),
+		officePhone: getCustomerField(customer.officePhone, customer.office_phone, customer.contactPersonOfficePhone),
+		email: getCustomerField(customer.companyEmail, customer.company_email, customer.email, customer.contactPersonEmail),
+	};
+}
 
-	if (!normalizedCustomerId) {
-		return null;
-	}
-
-	return customers.find((customer) => customer.customerId.toUpperCase() === normalizedCustomerId) ?? null;
+function getCustomerField(...values: Array<string | undefined>) {
+	return values.map((value) => String(value ?? "").trim()).find(Boolean) ?? "";
 }
 
 function normalizeCustomerId(cid: string) {
