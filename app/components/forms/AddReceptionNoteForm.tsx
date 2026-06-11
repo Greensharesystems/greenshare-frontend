@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, FocusEvent, FormEvent, MouseEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import Button from "@/app/components/ui/Button";
@@ -34,6 +34,48 @@ type CustomerRecord = Readonly<{
 
 type AddReceptionNoteFormProps = Readonly<{
 	submitLabel?: string;
+	mode?: "create" | "edit";
+	rnid?: string;
+}>;
+
+type ReceptionNoteRecord = Readonly<{
+	rnidDate?: string;
+	rnid?: string;
+	customerId?: string;
+	producingCompanyName?: string;
+	producingCompanyEmirate?: string;
+	producingCompanyOfficeAddress?: string;
+	producingCompanyContactPerson?: string;
+	producingCompanyOfficePhone?: string;
+	producingCompanyEmail?: string;
+	referringCompany?: string | null;
+	projectName?: string | null;
+	projectNumber?: string | null;
+	projectLocation?: string | null;
+	projectCustomFields?: Array<{ field_title?: string; field_value?: string; title?: string; inputValue?: string }> | null;
+	transportingCompanyName?: string;
+	transportingCompanyContactPerson?: string;
+	transportingCompanyOfficePhone?: string;
+	transportingCompanyEmail?: string;
+	wasteStreams?: ReceptionNoteWasteStream[];
+	vehiclePlateNo?: string;
+	driverName?: string;
+	wasteStreamName?: string;
+	wasteStreamQuantity?: string;
+	rnIssuedBy?: string;
+	status?: string;
+}>;
+
+type ReceptionNoteWasteStream = Readonly<{
+	code?: string;
+	name?: string;
+	wasteClass?: string;
+	physicalState?: string;
+	quantity?: string;
+	quantityUnit?: string;
+	receptionDate?: string;
+	collectionEmirate?: string;
+	collectionLocation?: string;
 }>;
 
 const producingCompanyFields = [
@@ -68,18 +110,22 @@ const emptyProducingCompany = {
 
 export default function AddReceptionNoteForm({
 	submitLabel = "Add Reception Note",
+	mode = "create",
+	rnid = "",
 }: AddReceptionNoteFormProps) {
 	const router = useRouter();
 	const { session } = useAuth();
+	const isEditMode = mode === "edit";
 	const [cid, setCid] = useState("");
 	const [producingCompany, setProducingCompany] = useState(emptyProducingCompany);
 	const [customerLookupMessage, setCustomerLookupMessage] = useState("");
 	const [isFetchingCustomer, setIsFetchingCustomer] = useState(false);
-	const issuedBy = session?.role === "employee" ? session.displayName : "";
+	const sessionIssuedBy = session?.role === "employee" || session?.role === "admin" ? session.displayName : "";
 	const [generatedRnid, setGeneratedRnid] = useState("");
 	const [generatedRnidDate, setGeneratedRnidDate] = useState("");
 	const [wasteStreams] = useState([0]);
 	const [errorMessage, setErrorMessage] = useState("");
+	const [isLoadingReceptionNote, setIsLoadingReceptionNote] = useState(isEditMode);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isGeneratingRnid, setIsGeneratingRnid] = useState(false);
 	const [referringCompany, setReferringCompany] = useState("");
@@ -88,6 +134,84 @@ export default function AddReceptionNoteForm({
 	const [projectLocation, setProjectLocation] = useState("");
 	const [customProjectFields, setCustomProjectFields] = useState<Array<{ id: number; title: string; inputValue: string }>>([]);
 	const [nextCustomFieldId, setNextCustomFieldId] = useState(0);
+	const [editDefaults, setEditDefaults] = useState<ReceptionNoteRecord>({});
+	const issuedBy = isEditMode ? String(editDefaults.rnIssuedBy ?? sessionIssuedBy) : sessionIssuedBy;
+	const tablePath = session?.role === "admin" ? "/admin/traceability/reception-notes" : "/employee/reception-notes";
+
+	useEffect(() => {
+		if (!isEditMode) {
+			setIsLoadingReceptionNote(false);
+			return;
+		}
+
+		const normalizedRnid = rnid.trim();
+		if (!normalizedRnid) {
+			setErrorMessage("A valid reception note ID is required for editing.");
+			setIsLoadingReceptionNote(false);
+			return;
+		}
+
+		let isCurrent = true;
+		setIsLoadingReceptionNote(true);
+		setErrorMessage("");
+
+		async function loadReceptionNoteForEdit() {
+			try {
+				const response = await apiFetch(`/reception-notes/${encodeURIComponent(normalizedRnid)}`, {
+					cache: "no-store",
+				});
+				const payload = (await response.json()) as ReceptionNoteRecord | { detail?: string };
+
+				if (!response.ok) {
+					throw new Error("detail" in payload ? (payload.detail ?? "Unable to load that reception note.") : "Unable to load that reception note.");
+				}
+
+				if (!isCurrent) return;
+
+				const receptionNote = payload as ReceptionNoteRecord;
+				const projectFields = Array.isArray(receptionNote.projectCustomFields)
+					? receptionNote.projectCustomFields.map((field, index) => ({
+						id: index,
+						title: String(field.field_title ?? field.title ?? ""),
+						inputValue: String(field.field_value ?? field.inputValue ?? ""),
+					}))
+					: [];
+
+				setEditDefaults(receptionNote);
+				setCid(String(receptionNote.customerId ?? ""));
+				setGeneratedRnid(String(receptionNote.rnid ?? ""));
+				setGeneratedRnidDate(String(receptionNote.rnidDate ?? ""));
+				setProducingCompany({
+					companyName: String(receptionNote.producingCompanyName ?? ""),
+					emirate: String(receptionNote.producingCompanyEmirate ?? ""),
+					officeAddress: String(receptionNote.producingCompanyOfficeAddress ?? ""),
+					contactPerson: String(receptionNote.producingCompanyContactPerson ?? ""),
+					officePhone: String(receptionNote.producingCompanyOfficePhone ?? ""),
+					email: String(receptionNote.producingCompanyEmail ?? ""),
+				});
+				setReferringCompany(String(receptionNote.referringCompany ?? ""));
+				setProjectName(String(receptionNote.projectName ?? ""));
+				setProjectNumber(String(receptionNote.projectNumber ?? ""));
+				setProjectLocation(String(receptionNote.projectLocation ?? ""));
+				setCustomProjectFields(projectFields);
+				setNextCustomFieldId(projectFields.length);
+			} catch (error) {
+				if (isCurrent) {
+					setErrorMessage(error instanceof Error ? error.message : "Unable to load that reception note.");
+				}
+			} finally {
+				if (isCurrent) {
+					setIsLoadingReceptionNote(false);
+				}
+			}
+		}
+
+		void loadReceptionNoteForEdit();
+
+		return () => {
+			isCurrent = false;
+		};
+	}, [isEditMode, rnid]);
 
 	function handleCidChange(event: ChangeEvent<HTMLInputElement>) {
 		const nextCid = event.target.value.toUpperCase();
@@ -194,7 +318,7 @@ export default function AddReceptionNoteForm({
 		}
 
 		if (!issuedBy) {
-			setErrorMessage("Only an employee session can issue a reception note.");
+			setErrorMessage("Only an admin or employee session can save a reception note.");
 			return;
 		}
 
@@ -250,8 +374,8 @@ export default function AddReceptionNoteForm({
 		setIsSubmitting(true);
 
 		try {
-			const response = await apiFetch("/reception-notes", {
-				method: "POST",
+			const response = await apiFetch(isEditMode ? `/reception-notes/${encodeURIComponent(generatedRnid)}` : "/reception-notes", {
+				method: isEditMode ? "PUT" : "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
@@ -290,11 +414,11 @@ export default function AddReceptionNoteForm({
 			const payload = (await response.json()) as { detail?: string };
 
 			if (!response.ok) {
-				setErrorMessage(payload.detail ?? "Unable to add that reception note right now.");
+				setErrorMessage(payload.detail ?? `Unable to ${isEditMode ? "update" : "add"} that reception note right now.`);
 				return;
 			}
 
-			router.push("/employee/reception-notes");
+			router.push(tablePath);
 			router.refresh();
 		} catch {
 			setErrorMessage("Unable to reach the backend. Check that the API is running.");
@@ -362,6 +486,22 @@ export default function AddReceptionNoteForm({
 		setCustomProjectFields((prev) => prev.map((f) => f.id === fieldId ? { ...f, [key]: value } : f));
 	}
 
+	if (isLoadingReceptionNote) {
+		return (
+			<div className="flex w-full max-w-4xl flex-col gap-5 p-6">
+				<p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">Loading reception note...</p>
+			</div>
+		);
+	}
+
+	const primaryWasteStreamDefaults = editDefaults.wasteStreams?.[0] ?? {};
+	const transportingCompanyDefaults: Record<(typeof transportingCompanyFields)[number]["id"], string> = {
+		transportingCompanyName: String(editDefaults.transportingCompanyName ?? ""),
+		transportingCompanyContactPerson: String(editDefaults.transportingCompanyContactPerson ?? ""),
+		transportingCompanyOfficePhone: String(editDefaults.transportingCompanyOfficePhone ?? ""),
+		transportingCompanyEmail: String(editDefaults.transportingCompanyEmail ?? ""),
+	};
+
 	return (
 		<form className="flex w-full max-w-4xl flex-col gap-5 p-6" onSubmit={handleSubmit}>
 			{errorMessage ? (
@@ -384,6 +524,7 @@ export default function AddReceptionNoteForm({
 							value={cid}
 							onChange={handleCidChange}
 							onBlur={handleCidBlur}
+							readOnly={isEditMode}
 							placeholder="Enter customer ID"
 							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm uppercase text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 						/>
@@ -535,6 +676,7 @@ export default function AddReceptionNoteForm({
 								id={field.id}
 								name={field.id}
 								type={field.id.includes("Email") ? "email" : "text"}
+								defaultValue={transportingCompanyDefaults[field.id]}
 								placeholder={`Enter ${field.label.toLowerCase()}`}
 								className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 							/>
@@ -556,6 +698,7 @@ export default function AddReceptionNoteForm({
 							id="vehiclePlateNo"
 							name="vehiclePlateNo"
 							type="text"
+							defaultValue={String(editDefaults.vehiclePlateNo ?? "")}
 							placeholder="Enter vehicle plate number"
 							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 						/>
@@ -567,6 +710,7 @@ export default function AddReceptionNoteForm({
 							id="driverName"
 							name="driverName"
 							type="text"
+							defaultValue={String(editDefaults.driverName ?? "")}
 							placeholder="Enter driver name"
 							className="h-10 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 						/>
@@ -591,6 +735,7 @@ export default function AddReceptionNoteForm({
 											id={`${field.id}-${streamIndex}`}
 											name={`wasteStreams[${streamIndex}].${field.id}`}
 											type={field.type}
+											defaultValue={String(primaryWasteStreamDefaults[field.id] ?? "")}
 											placeholder={field.placeholder}
 											className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 										/>
@@ -601,7 +746,7 @@ export default function AddReceptionNoteForm({
 									<span className="text-sm font-medium text-slate-700">Class</span>
 									<select
 										name={`wasteStreams[${streamIndex}].class`}
-										defaultValue=""
+										defaultValue={String(primaryWasteStreamDefaults.wasteClass ?? "")}
 										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 									>
 										<option value="" disabled>Select class</option>
@@ -614,7 +759,7 @@ export default function AddReceptionNoteForm({
 									<span className="text-sm font-medium text-slate-700">Physical State</span>
 									<select
 										name={`wasteStreams[${streamIndex}].physicalState`}
-										defaultValue=""
+										defaultValue={String(primaryWasteStreamDefaults.physicalState ?? "")}
 										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 									>
 										<option value="" disabled>Select physical state</option>
@@ -629,6 +774,7 @@ export default function AddReceptionNoteForm({
 									<input
 										name={`wasteStreams[${streamIndex}].quantity`}
 										type="text"
+										defaultValue={String(primaryWasteStreamDefaults.quantity ?? "")}
 										placeholder="Enter waste stream quantity"
 										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 									/>
@@ -638,7 +784,7 @@ export default function AddReceptionNoteForm({
 									<span className="text-sm font-medium text-slate-700">Quantity Unit</span>
 									<select
 										name={`wasteStreams[${streamIndex}].quantityUnit`}
-										defaultValue=""
+										defaultValue={String(primaryWasteStreamDefaults.quantityUnit ?? "")}
 										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 									>
 										<option value="" disabled>Select quantity unit</option>
@@ -654,7 +800,7 @@ export default function AddReceptionNoteForm({
 									<select
 										name={`wasteStreams[${streamIndex}].collectionEmirate`}
 										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
-										defaultValue=""
+										defaultValue={String(primaryWasteStreamDefaults.collectionEmirate ?? "")}
 									>
 										<option value="" disabled>Select collection emirate</option>
 										<option value="Abu Dhabi">Abu Dhabi</option>
@@ -672,6 +818,7 @@ export default function AddReceptionNoteForm({
 									<input
 										name={`wasteStreams[${streamIndex}].collectionLocation`}
 										type="text"
+										defaultValue={String(primaryWasteStreamDefaults.collectionLocation ?? "")}
 										placeholder="Enter collection location"
 										className="h-10 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#36B44D] focus:bg-white focus:ring-4 focus:ring-[#36B44D]/20"
 									/>
@@ -684,6 +831,7 @@ export default function AddReceptionNoteForm({
 											name={`wasteStreams[${streamIndex}].receptionDate`}
 											data-reception-date-input="true"
 											type="text"
+											defaultValue={String(primaryWasteStreamDefaults.receptionDate ?? "")}
 											inputMode="numeric"
 											autoComplete="off"
 											placeholder="19-04-2026"
@@ -758,9 +906,11 @@ export default function AddReceptionNoteForm({
 						/>
 					</label>
 
-					<Button type="button" variant="secondary" onClick={handleGenerateRnid} disabled={!normalizeCustomerId(cid) || isGeneratingRnid}>
-						{isGeneratingRnid ? "Generating..." : "Generate RNID"}
-					</Button>
+					{isEditMode ? null : (
+						<Button type="button" variant="secondary" onClick={handleGenerateRnid} disabled={!normalizeCustomerId(cid) || isGeneratingRnid}>
+							{isGeneratingRnid ? "Generating..." : "Generate RNID"}
+						</Button>
+					)}
 				</div>
 
 				<label className="flex flex-col gap-1.5">

@@ -10,10 +10,12 @@ export default function AdminReceptionNotesPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const isCreateView = searchParams.get("mode") === "new";
+	const isEditView = searchParams.get("mode") === "edit";
+	const rnid = searchParams.get("rnid") ?? "";
 
 	return (
 		<section className="min-h-[calc(100vh-54px)] bg-white px-6 py-6">
-			{isCreateView ? (
+			{isCreateView || isEditView ? (
 				<div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-4">
 					<div className="pt-1">
 						<Button variant="secondary" onClick={() => router.push("/admin/traceability/reception-notes")}>
@@ -21,11 +23,11 @@ export default function AdminReceptionNotesPage() {
 						</Button>
 					</div>
 					<div className="w-full max-w-4xl pt-2">
-						<h1 className="text-xl font-normal tracking-normal text-slate-950">Add Reception Note</h1>
+						<h1 className="text-xl font-normal tracking-normal text-slate-950">{isEditView ? "Edit Reception Note" : "Add Reception Note"}</h1>
 					</div>
 					<div aria-hidden="true" />
 					<div className="w-full max-w-4xl">
-						<AddReceptionNoteForm submitLabel="Add Reception Note" />
+						<AddReceptionNoteForm submitLabel={isEditView ? "Save Reception Note" : "Add Reception Note"} mode={isEditView ? "edit" : "create"} rnid={rnid} />
 					</div>
 				</div>
 			) : (

@@ -32,25 +32,30 @@ type DownloadPdfWithAuthOptions = Readonly<{
 	fallbackFilename: string;
 }>;
 
+type ApiFetchInit = RequestInit & Readonly<{
+	timeoutMs?: number;
+}>;
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+const PDF_REQUEST_TIMEOUT_MS = 180_000;
 
-export async function apiFetch(path: string, init?: RequestInit) {
+export async function apiFetch(path: string, init?: ApiFetchInit) {
 	const session = readAuthSession();
-	const headers = new Headers(init?.headers);
+	const { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, ...requestInit } = init ?? {};
+	const headers = new Headers(requestInit.headers);
 
 	if (session?.accessToken) {
 		headers.set("Authorization", `Bearer ${session.accessToken}`);
 	}
 
 	const timeoutController = new AbortController();
-	const timeoutId = setTimeout(() => timeoutController.abort(), DEFAULT_REQUEST_TIMEOUT_MS);
+	const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
 
 	try {
 		const response = await fetch(buildApiUrl(path), {
-			...init,
+			...requestInit,
 			headers,
-			signal: init?.signal ?? timeoutController.signal,
+			signal: requestInit.signal ?? timeoutController.signal,
 		});
 
 		if (response.status === 401 && typeof window !== "undefined") {
@@ -125,6 +130,7 @@ export async function openPdfWithAuth({ pdfType, documentId, path, fallbackError
 	try {
 		const response = await apiFetch(path, {
 			cache: "no-store",
+			timeoutMs: PDF_REQUEST_TIMEOUT_MS,
 		});
 
 		if (!response.ok) {
@@ -164,6 +170,7 @@ export async function downloadPdfWithAuth({ pdfType, documentId, path, fallbackE
 
 	const response = await apiFetch(path, {
 		cache: "no-store",
+		timeoutMs: PDF_REQUEST_TIMEOUT_MS,
 	});
 
 	if (!response.ok) {
