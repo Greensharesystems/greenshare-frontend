@@ -31,7 +31,7 @@ export default function CustomerSettingsPage() {
 			<div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
 				<div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_40px_rgba(15,23,42,0.05)]">
 					<p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#36B44D]">Settings</p>
-					<h1 className="mt-2 text-3xl font-medium tracking-[-0.05em] text-slate-900">Workspace Background</h1>
+					<h1 className="mt-2 text-base font-normal tracking-normal text-slate-900">Workspace Background</h1>
 					<p className="mt-2 max-w-2xl text-sm text-slate-500">
 						Generic settings are limited to background selection for now. Pick the workspace surface you want across the customer area.
 					</p>

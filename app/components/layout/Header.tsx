@@ -35,7 +35,7 @@ export default function Header({
 					className="h-auto w-34 shrink-0"
 				/>
 				<div className="min-w-0">
-					{title ? <h1 className="truncate text-xl font-semibold text-slate-950">{title}</h1> : null}
+					{title ? <h1 className="truncate text-base font-normal text-slate-950">{title}</h1> : null}
 					{subtitle ? <p className="truncate text-sm text-slate-500">{subtitle}</p> : null}
 					{children}
 				</div>

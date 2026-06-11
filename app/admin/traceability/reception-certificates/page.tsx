@@ -21,7 +21,7 @@ export default function AdminReceptionCertificatesPage() {
 						</Button>
 					</div>
 					<div className="w-full max-w-4xl pt-2">
-						<h1 className="text-3xl font-light tracking-[-0.04em] text-slate-950">Add Reception Certificate</h1>
+						<h1 className="text-base font-normal tracking-normal text-slate-950">Add Reception Certificate</h1>
 					</div>
 					<div aria-hidden="true" />
 					<div className="w-full max-w-4xl">
@@ -30,7 +30,7 @@ export default function AdminReceptionCertificatesPage() {
 				</div>
 			) : (
 				<div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-					<h1 className="text-3xl font-bold tracking-[-0.04em] text-slate-950">Reception Certificates</h1>
+					<h1 className="text-base font-normal tracking-normal text-slate-950">Reception Certificates</h1>
 					<p className="max-w-3xl text-sm leading-6 text-slate-600">
 						Review and manage reception certificate activity.
 					</p>

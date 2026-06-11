@@ -115,7 +115,7 @@ export default function DashboardContent({ role, titleOverride }: DashboardConte
 			<div className="mx-auto flex w-full max-w-400 flex-col gap-4">
 				{role !== "customer" && displayTitle ? (
 					<div className="flex flex-col gap-1">
-						<h1 className="text-3xl font-light tracking-[-0.04em] text-slate-950">{displayTitle}</h1>
+						<h1 className="text-base font-normal tracking-normal text-slate-950">{displayTitle}</h1>
 					</div>
 				) : null}
 
