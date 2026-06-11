@@ -11,6 +11,7 @@ import {
 	adminGrowthLinks,
 	adminLinks,
 	adminTraceabilityLinks,
+	greeIcon,
 	growthFlyoutIcon,
 	logoutIcon,
 	settingsIcon,
@@ -65,6 +66,7 @@ export default function AdminLayout({
 								{ label: "Growth", icon: growthFlyoutIcon, items: adminGrowthLinks },
 								{ label: "Traceability", icon: traceabilityFlyoutIcon, items: adminTraceabilityLinks },
 							]}
+							extraItems={[{ href: "/admin/gree", label: "Gree", icon: greeIcon }]}
 						/>
 					}
 					footer={
