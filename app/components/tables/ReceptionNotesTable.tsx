@@ -25,6 +25,7 @@ type ReceptionCertificateRow = Readonly<{
 rcid: string;
 rnid: string;
 linkedRnids: ReadonlyArray<string>;
+status: "Issued" | "Pending" | "Draft";
 }>;
 
 type ReceptionNoteRow = Readonly<{
@@ -32,6 +33,7 @@ id: number;
 rnidDate: string;
 rnid: string;
 receptionCertificateReference: string;
+receptionCertificateStatus: "Issued" | "Pending" | "Draft";
 customerId: string;
 producingCompanyName: string;
 referringCompany: string;
@@ -158,6 +160,7 @@ const certificatesPayload = (await certificatesResponse.json()) as Array<{
 rcid?: string;
 rnid?: string;
 linkedRnids?: string[];
+status?: string;
 }> | { detail?: string };
 
 if (!notesResponse.ok || !Array.isArray(notesPayload)) {
@@ -176,14 +179,18 @@ const receptionCertificates: ReceptionCertificateRow[] = certificatesPayload.map
 rcid: String(cert.rcid ?? ""),
 rnid: String(cert.rnid ?? ""),
 linkedRnids: Array.isArray(cert.linkedRnids) ? cert.linkedRnids.map((v) => String(v ?? "")) : [],
+status: normalizeStatus(String(cert.status ?? "Issued")),
 }));
 
 setRows(
-notesPayload.map((note) => ({
+notesPayload.map((note) => {
+const linkedReceptionCertificate = getLinkedReceptionCertificate(String(note.rnid ?? ""), receptionCertificates);
+return {
 id: Number(note.id ?? 0),
 rnidDate: String(note.rnidDate ?? ""),
 rnid: String(note.rnid ?? ""),
-receptionCertificateReference: getLinkedReceptionCertificateReference(String(note.rnid ?? ""), receptionCertificates),
+receptionCertificateReference: linkedReceptionCertificate?.rcid.trim() ?? "",
+receptionCertificateStatus: linkedReceptionCertificate?.status ?? "Pending",
 customerId: String(note.customerId ?? ""),
 producingCompanyName: String(note.producingCompanyName ?? ""),
 referringCompany: String(note.referringCompany ?? ""),
@@ -216,7 +223,8 @@ wasteStreamName: String(note.wasteStreamName ?? ""),
 wasteStreamQuantity: String(note.wasteStreamQuantity ?? ""),
 rnIssuedBy: String(note.rnIssuedBy ?? ""),
 status: normalizeStatus(String(note.status ?? "Issued")),
-})),
+};
+}),
 );
 } catch (error) {
 setRows([]);
@@ -328,8 +336,9 @@ setErrorMessage(error instanceof Error ? error.message : "Unable to preview that
 function handleEditReceptionNote(row: ReceptionNoteRow) {
 const normalizedRnid = row.rnid.trim();
 if (!normalizedRnid) return;
+if (!canEditReceptionNote(row)) return;
 const basePath = role === "admin" ? "/admin/traceability/reception-notes" : "/employee/reception-notes";
-router.push(`${basePath}/${encodeURIComponent(normalizedRnid)}/edit`);
+router.push(`${basePath}?mode=edit&rnid=${encodeURIComponent(normalizedRnid)}`);
 }
 
 function handleDownloadCsv() {
@@ -351,7 +360,7 @@ getPrimaryWasteStreamClass(row),
 getPrimaryWasteStreamQuantityUnit(row),
 row.status === "Issued" ? "Issued" : "Pending",
 row.rnIssuedBy,
-row.receptionCertificateReference ? "Issued" : "Pending",
+row.receptionCertificateReference ? row.receptionCertificateStatus : "Pending",
 ]);
 const csvContent = [headers, ...csvData]
 .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -503,6 +512,8 @@ Clear Filters
 						) : pagedRows.map((row) => {
 							const normalizedRnid = row.rnid.trim();
 							const isRowBusy = activeActionKey === `view:${normalizedRnid}` || activeActionKey === `download:${normalizedRnid}`;
+							const isEditDisabled = !canEditReceptionNote(row);
+							const editLabel = isEditDisabled ? "Reception Note cannot be edited after Reception Certificate is issued." : "Edit";
 							return (
 								<tr key={row.rnid} className="bg-white transition hover:bg-slate-50/80">
 									<DataCell>{row.rnidDate || "N/A"}</DataCell>
@@ -538,9 +549,9 @@ Clear Filters
 											</ActionButton>
 											{(role === "admin" || role === "employee") ? (
 												<ActionButton
-													label="Edit"
+													label={editLabel}
 													onClick={() => handleEditReceptionNote(row)}
-													disabled={isLoading}
+													disabled={isLoading || isEditDisabled}
 												>
 													<Pencil className="h-3.5 w-3.5" />
 												</ActionButton>
@@ -620,6 +631,10 @@ if (status === "Pending") return "Pending";
 return "Issued";
 }
 
+function canEditReceptionNote(row: ReceptionNoteRow) {
+return !row.receptionCertificateReference || row.receptionCertificateStatus !== "Issued";
+}
+
 function getPrimaryWasteStream(row: ReceptionNoteRow): ReceptionNoteWasteStream | null {
 return row.wasteStreams[0] ?? null;
 }
@@ -653,12 +668,11 @@ if (isNaN(date.getTime())) return "";
 return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
 
-function getLinkedReceptionCertificateReference(rnid: string, certificates: ReadonlyArray<ReceptionCertificateRow>): string {
+function getLinkedReceptionCertificate(rnid: string, certificates: ReadonlyArray<ReceptionCertificateRow>) {
 const normalizedRnid = rnid.trim();
-if (!normalizedRnid) return "";
+if (!normalizedRnid) return null;
 
-const linked = certificates.find((cert) => getLinkedRnids(cert).includes(normalizedRnid));
-return linked?.rcid?.trim() ?? "";
+return certificates.find((cert) => getLinkedRnids(cert).includes(normalizedRnid)) ?? null;
 }
 
 function getLinkedRnids(certificate: ReceptionCertificateRow): string[] {
