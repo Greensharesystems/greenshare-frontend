@@ -102,6 +102,42 @@ export default function AddReceptionNoteForm({
 		}
 	}
 
+	async function fetchCustomerProducingCompany(normalizedCustomerId: string) {
+		const response = await apiFetch(`/customers/${encodeURIComponent(normalizedCustomerId)}`, {
+			cache: "no-store",
+		});
+
+		if (response.status === 404) {
+			setCustomerLookupMessage("No customer found for this CID.");
+			return null;
+		}
+
+		if (!response.ok) {
+			throw new Error(`Customer lookup failed with status ${response.status}.`);
+		}
+
+		const customer = (await response.json()) as CustomerRecord;
+		return mapCustomerToProducingCompany(customer);
+	}
+
+	async function lookupCustomerByCid(normalizedCustomerId: string) {
+		setIsFetchingCustomer(true);
+		setCustomerLookupMessage("");
+
+		try {
+			const nextProducingCompany = await fetchCustomerProducingCompany(normalizedCustomerId);
+			setProducingCompany(nextProducingCompany ?? emptyProducingCompany);
+			return nextProducingCompany;
+		} catch (error) {
+			console.error("Unable to fetch customer details for reception note CID lookup.", error);
+			setProducingCompany(emptyProducingCompany);
+			setCustomerLookupMessage("Unable to fetch customer details.");
+			return null;
+		} finally {
+			setIsFetchingCustomer(false);
+		}
+	}
+
 	async function handleCidBlur() {
 		const normalizedCustomerId = normalizeCustomerId(cid);
 
@@ -111,33 +147,7 @@ export default function AddReceptionNoteForm({
 			return;
 		}
 
-		setIsFetchingCustomer(true);
-		setCustomerLookupMessage("");
-
-		try {
-			const response = await apiFetch(`/customers/${encodeURIComponent(normalizedCustomerId)}`, {
-				cache: "no-store",
-			});
-
-			if (response.status === 404) {
-				setProducingCompany(emptyProducingCompany);
-				setCustomerLookupMessage("No customer found for this CID.");
-				return;
-			}
-
-			if (!response.ok) {
-				throw new Error(`Customer lookup failed with status ${response.status}.`);
-			}
-
-			const customer = (await response.json()) as CustomerRecord;
-			setProducingCompany(mapCustomerToProducingCompany(customer));
-		} catch (error) {
-			console.error("Unable to fetch customer details for reception note CID lookup.", error);
-			setProducingCompany(emptyProducingCompany);
-			setCustomerLookupMessage("Unable to fetch customer details.");
-		} finally {
-			setIsFetchingCustomer(false);
-		}
+		await lookupCustomerByCid(normalizedCustomerId);
 	}
 
 	async function handleGenerateRnid() {
@@ -228,6 +238,15 @@ export default function AddReceptionNoteForm({
 			return;
 		}
 
+		const producingCompanyForSubmit = hasProducingCompanyDetails(producingCompany)
+			? producingCompany
+			: await lookupCustomerByCid(normalizedCustomerId);
+
+		if (!producingCompanyForSubmit) {
+			setErrorMessage("Enter a registered customer ID before submitting.");
+			return;
+		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -242,18 +261,20 @@ export default function AddReceptionNoteForm({
 					customerId: normalizedCustomerId,
 					weighBridgeSlipDate: "",
 					weighBridgeBillNo: "",
-					producingCompanyName: producingCompany.companyName,
-					producingCompanyEmirate: producingCompany.emirate,
-					producingCompanyOfficeAddress: producingCompany.officeAddress,
-					producingCompanyContactPerson: producingCompany.contactPerson,
-					producingCompanyOfficePhone: producingCompany.officePhone,
-					producingCompanyEmail: producingCompany.email,						referringCompany: referringCompany.trim() || null,
-						projectName: projectName.trim() || null,
-						projectNumber: projectNumber.trim() || null,
-						projectLocation: projectLocation.trim() || null,
-						projectCustomFields: customProjectFields
-							.filter((f) => f.title.trim() || f.inputValue.trim())
-							.map((f) => ({ field_title: f.title.trim(), field_value: f.inputValue.trim() })),					transportingCompanyName: String(formData.get("transportingCompanyName") ?? "").trim(),
+					producingCompanyName: producingCompanyForSubmit.companyName,
+					producingCompanyEmirate: producingCompanyForSubmit.emirate,
+					producingCompanyOfficeAddress: producingCompanyForSubmit.officeAddress,
+					producingCompanyContactPerson: producingCompanyForSubmit.contactPerson,
+					producingCompanyOfficePhone: producingCompanyForSubmit.officePhone,
+					producingCompanyEmail: producingCompanyForSubmit.email,
+					referringCompany: referringCompany.trim() || null,
+					projectName: projectName.trim() || null,
+					projectNumber: projectNumber.trim() || null,
+					projectLocation: projectLocation.trim() || null,
+					projectCustomFields: customProjectFields
+						.filter((f) => f.title.trim() || f.inputValue.trim())
+						.map((f) => ({ field_title: f.title.trim(), field_value: f.inputValue.trim() })),
+					transportingCompanyName: String(formData.get("transportingCompanyName") ?? "").trim(),
 					transportingCompanyContactPerson: String(formData.get("transportingCompanyContactPerson") ?? "").trim(),
 					transportingCompanyOfficePhone: String(formData.get("transportingCompanyOfficePhone") ?? "").trim(),
 					transportingCompanyEmail: String(formData.get("transportingCompanyEmail") ?? "").trim(),
@@ -791,6 +812,10 @@ function mapCustomerToProducingCompany(customer: CustomerRecord) {
 
 function getCustomerField(...values: Array<string | undefined>) {
 	return values.map((value) => String(value ?? "").trim()).find(Boolean) ?? "";
+}
+
+function hasProducingCompanyDetails(producingCompany: typeof emptyProducingCompany) {
+	return Object.values(producingCompany).some((value) => value.trim());
 }
 
 function normalizeCustomerId(cid: string) {
