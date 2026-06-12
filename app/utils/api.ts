@@ -139,12 +139,13 @@ export async function openPdfWithAuth({ pdfType, documentId, path, fallbackError
 
 		const pdfBlob = await response.blob();
 		const previewUrl = window.URL.createObjectURL(pdfBlob);
+		const previewTitle = getPdfPreviewTitle(response.headers.get("Content-Disposition"), String(documentId));
 
 		if (previewWindow) {
-			previewWindow.location.href = previewUrl;
+			writePdfPreviewWindow(previewWindow, previewUrl, previewTitle);
 		}
 		else {
-			window.open(previewUrl, "_blank");
+			openTitledPdfPreview(previewUrl, previewTitle);
 		}
 
 		window.setTimeout(() => {
@@ -238,6 +239,72 @@ function extractDownloadFilename(contentDisposition: string | null, fallbackFile
 	}
 
 	return ensurePdfFilename(matchedFilename[1]);
+}
+
+
+function getPdfPreviewTitle(contentDisposition: string | null, fallbackTitle: string) {
+	const filename = extractDownloadFilename(contentDisposition, fallbackTitle);
+	return filename.replace(/\.pdf$/i, "") || fallbackTitle || "document";
+}
+
+
+function writePdfPreviewWindow(previewWindow: Window, previewUrl: string, previewTitle: string) {
+	const escapedTitle = escapeHtml(previewTitle);
+	const escapedPreviewUrl = escapeHtml(previewUrl);
+
+	previewWindow.document.open();
+	previewWindow.document.write(`<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>${escapedTitle}</title>
+<style>
+html, body { height: 100%; margin: 0; background: #111827; }
+iframe { border: 0; display: block; height: 100%; width: 100%; }
+</style>
+</head>
+<body>
+<iframe src="${escapedPreviewUrl}" title="${escapedTitle}"></iframe>
+</body>
+</html>`);
+	previewWindow.document.close();
+}
+
+
+function openTitledPdfPreview(previewUrl: string, previewTitle: string) {
+	const escapedTitle = escapeHtml(previewTitle);
+	const escapedPreviewUrl = escapeHtml(previewUrl);
+	const htmlBlob = new Blob([`<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8" /><title>${escapedTitle}</title></head>
+<body style="height:100%;margin:0;background:#111827"><iframe src="${escapedPreviewUrl}" title="${escapedTitle}" style="border:0;display:block;height:100%;width:100%"></iframe></body>
+</html>`], { type: "text/html" });
+	const htmlUrl = window.URL.createObjectURL(htmlBlob);
+
+	window.open(htmlUrl, "_blank");
+	window.setTimeout(() => {
+		window.URL.revokeObjectURL(htmlUrl);
+	}, 60_000);
+}
+
+
+function escapeHtml(value: string) {
+	return value.replace(/[&<>"']/g, (character) => {
+		switch (character) {
+			case "&":
+				return "&amp;";
+			case "<":
+				return "&lt;";
+			case ">":
+				return "&gt;";
+			case '"':
+				return "&quot;";
+			case "'":
+				return "&#39;";
+			default:
+				return character;
+		}
+	});
 }
 
 
