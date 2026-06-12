@@ -4,11 +4,20 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import type { FeatureCollection, Point } from "geojson";
 import { Minus, Plus } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Map, { Marker, Popup, Source, Layer, type MapRef, type ViewStateChangeEvent } from "react-map-gl/mapbox";
 
 import { GREENSHARE_PALETTE } from "@/app/components/customer-dashboard/greensharePalette";
+import {
+	MAPBOX_ACCESS_TOKEN,
+	MAPBOX_DEFAULT_VIEW_STATE,
+	MAPBOX_STYLE,
+	UAE_MAX_BOUNDS,
+	UAE_VIEW_BOUNDS,
+	warnIfMapboxTokenMissing,
+} from "@/lib/mapbox";
 
 
 type CollectionSourceLocation = Readonly<{
@@ -62,22 +71,6 @@ type TooltipState =
 		emirate_name: string;
 	}>;
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-const INITIAL_VIEW_STATE = {
-	longitude: 54.72,
-	latitude: 24.77,
-	zoom: 6.05,
-	bearing: 0,
-	pitch: 0,
-} as const;
-const UAE_VIEW_BOUNDS: [[number, number], [number, number]] = [
-	[51.95, 22.85],
-	[56.75, 26.3],
-];
-const UAE_MAX_BOUNDS: [[number, number], [number, number]] = [
-	[51.5, 22.4],
-	[57.15, 26.7],
-];
 const MIN_ZOOM = 5.3;
 const MAX_ZOOM = 8.8;
 const LOCATION_COLLISION_THRESHOLD = 0.08;
@@ -127,9 +120,11 @@ export default function CollectionSourceMap({
 	className,
 }: CollectionSourceMapProps) {
 	const mapRef = useRef<MapRef | null>(null);
-	const [zoom, setZoom] = useState<number>(INITIAL_VIEW_STATE.zoom);
+	const [zoom, setZoom] = useState<number>(MAPBOX_DEFAULT_VIEW_STATE.zoom);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+	const [isMapReady, setIsMapReady] = useState(false);
+	const [mapError, setMapError] = useState("");
 	const normalizedLocations = useMemo(
 		() => locations.map(resolveLocation).filter((location): location is ResolvedLocation => location !== null),
 		[locations],
@@ -160,16 +155,33 @@ export default function CollectionSourceMap({
 		})),
 	}), [activeEmirate, emiratesWithData]);
 
+	useEffect(() => {
+		warnIfMapboxTokenMissing();
+	}, []);
+
+	useEffect(() => {
+		const map = mapRef.current?.getMap();
+		if (!map || !isMapReady) {
+			return;
+		}
+
+		fitMapToMarkersOrUae(map, collectionMarkers);
+	}, [collectionMarkers, isMapReady]);
+
 	if (loading) {
-		return <MapMessage className={className} tone="neutral" message="Loading collection source locations..." />;
+		return <MapLoadingState className={className} message="Loading collection source locations..." />;
 	}
 
-	if (!MAPBOX_TOKEN) {
-		return <MapMessage className={className} tone="neutral" message="Map unavailable until NEXT_PUBLIC_MAPBOX_TOKEN is configured." />;
+	if (!MAPBOX_ACCESS_TOKEN) {
+		return <MapMessage className={className} tone="neutral" message="Collection source map is not configured yet." />;
 	}
 
 	if (error) {
 		return <MapMessage className={className} tone="error" message={error} />;
+	}
+
+	if (mapError) {
+		return <MapMessage className={className} tone="error" message={mapError} />;
 	}
 
 	if (collectionMarkers.length === 0) {
@@ -179,11 +191,12 @@ export default function CollectionSourceMap({
 	return (
 		<div className={joinClasses("flex h-full min-h-0 flex-col", className)}>
 			<div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.4rem] border border-[#d8eadc]">
+				{!isMapReady ? <MapLoadingOverlay message="Initializing map..." /> : null}
 				<Map
 					ref={mapRef}
 					id="customer-collection-source-map"
-					mapboxAccessToken={MAPBOX_TOKEN}
-					initialViewState={INITIAL_VIEW_STATE}
+					mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
+					initialViewState={MAPBOX_DEFAULT_VIEW_STATE}
 					maxBounds={UAE_MAX_BOUNDS}
 					minZoom={MIN_ZOOM}
 					maxZoom={MAX_ZOOM}
@@ -194,15 +207,15 @@ export default function CollectionSourceMap({
 					boxZoom={false}
 					doubleClickZoom={false}
 					style={{ width: "100%", height: "100%" }}
-					mapStyle="mapbox://styles/mapbox/light-v11"
+					mapStyle={MAPBOX_STYLE}
 					onLoad={(event) => {
 						const map = event.target;
 						minimizeMapboxStyle(map);
-						map.fitBounds(UAE_VIEW_BOUNDS, {
-								padding: { top: 34, right: 22, bottom: 14, left: 22 },
-							duration: 0,
-							maxZoom: INITIAL_VIEW_STATE.zoom,
-						});
+						fitMapToMarkersOrUae(map, collectionMarkers);
+						setIsMapReady(true);
+					}}
+					onError={() => {
+						setMapError("Collection source map could not be loaded. Please try again later.");
 					}}
 					onMove={(event: ViewStateChangeEvent) => {
 						setZoom(event.viewState.zoom);
@@ -390,6 +403,34 @@ function MapMessage({ className, tone, message }: Readonly<{ className?: string;
 }
 
 
+function MapLoadingState({ className, message }: Readonly<{ className?: string; message: string }>) {
+	return (
+		<div className={joinClasses("flex h-full items-center justify-center", className)}>
+			<MapSpinner message={message} />
+		</div>
+	);
+}
+
+
+function MapLoadingOverlay({ message }: Readonly<{ message: string }>) {
+	return (
+		<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/75 backdrop-blur-[1px]">
+			<MapSpinner message={message} />
+		</div>
+	);
+}
+
+
+function MapSpinner({ message }: Readonly<{ message: string }>) {
+	return (
+		<div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
+			<span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-200 border-t-[#34b34d]" aria-hidden="true" />
+			<span>{message}</span>
+		</div>
+	);
+}
+
+
 function resolveLocation(location: CollectionSourceLocation): ResolvedLocation | null {
 	const quantity = sanitizeQuantity(location.quantity);
 	if (quantity <= 0) {
@@ -537,6 +578,29 @@ function formatValue(value: number) {
 	return new Intl.NumberFormat("en-US", {
 		maximumFractionDigits: 2,
 	}).format(value);
+}
+
+
+function fitMapToMarkersOrUae(map: mapboxgl.Map, markers: ReadonlyArray<ResolvedLocation>) {
+	if (markers.length === 0) {
+		map.fitBounds(UAE_VIEW_BOUNDS, {
+			padding: { top: 34, right: 22, bottom: 14, left: 22 },
+			duration: 0,
+			maxZoom: MAPBOX_DEFAULT_VIEW_STATE.zoom,
+		});
+		return;
+	}
+
+	const bounds = markers.reduce(
+		(currentBounds, marker) => currentBounds.extend([marker.longitude, marker.latitude]),
+		new mapboxgl.LngLatBounds([markers[0].longitude, markers[0].latitude], [markers[0].longitude, markers[0].latitude]),
+	);
+
+	map.fitBounds(bounds, {
+		padding: { top: 42, right: 34, bottom: 34, left: 34 },
+		duration: 0,
+		maxZoom: 7.6,
+	});
 }
 
 

@@ -32,3 +32,4 @@ jobs:
           deployment_environment: dev
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL_STAGING }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN || secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
