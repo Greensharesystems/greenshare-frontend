@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Eye, Pencil, Search, Trash2, X } from "lucide-react";
+import { Download, Eye, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 import StatusBadge from "@/app/components/ui/StatusBadge";
@@ -511,7 +511,8 @@ Clear Filters
 							</tr>
 						) : pagedRows.map((row) => {
 							const normalizedRnid = row.rnid.trim();
-							const isRowBusy = activeActionKey === `view:${normalizedRnid}` || activeActionKey === `download:${normalizedRnid}`;
+							const isViewBusy = activeActionKey === `view:${normalizedRnid}`;
+							const isDownloadBusy = activeActionKey === `download:${normalizedRnid}`;
 							const isEditDisabled = !canEditReceptionNote(row);
 							const editLabel = isEditDisabled ? "Reception Note cannot be edited after Reception Certificate is issued." : "Edit";
 							return (
@@ -534,18 +535,18 @@ Clear Filters
 									<DataCell centered>
 										<div className="flex items-center justify-center gap-1">
 											<ActionButton
-												label={activeActionKey === `view:${normalizedRnid}` ? "Generating PDF..." : "View"}
+												label={isViewBusy ? "Loading PDF preview..." : "View"}
 												onClick={() => void handleViewReceptionNote(row)}
-												disabled={isLoading || isRowBusy}
+												disabled={isLoading || isViewBusy}
 											>
-												<Eye className="h-3.5 w-3.5" />
+												{isViewBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
 											</ActionButton>
 											<ActionButton
-												label={activeActionKey === `download:${normalizedRnid}` ? "Generating PDF..." : "Download"}
+												label={isDownloadBusy ? "Downloading PDF..." : "Download"}
 												onClick={() => void handleDownloadReceptionNote(row)}
-												disabled={isLoading || isRowBusy}
+												disabled={isLoading || isDownloadBusy}
 											>
-												<Download className="h-3.5 w-3.5" />
+												{isDownloadBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
 											</ActionButton>
 											{(role === "admin" || role === "employee") ? (
 												<ActionButton
@@ -561,7 +562,7 @@ Clear Filters
 													label="Remove"
 													danger
 													onClick={() => setConfirmRemoveRnid(normalizedRnid)}
-													disabled={isLoading || isRowBusy}
+													disabled={isLoading}
 												>
 													<Trash2 className="h-3.5 w-3.5" />
 												</ActionButton>

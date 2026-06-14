@@ -537,7 +537,6 @@ export default function AddCircularityCertificateForm({
 			}
 
 			router.push("/employee/circularity-certificate");
-			router.refresh();
 		} catch {
 			setErrorMessage("Unable to reach the backend. Check that the API is running.");
 		} finally {

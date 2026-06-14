@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Eye, Pencil, Search, Trash2, X } from "lucide-react";
+import { Download, Eye, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 import StatusBadge from "@/app/components/ui/StatusBadge";
@@ -281,6 +281,7 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 		}
 
 		try {
+			setActiveActionKey(`view-cc:${ccRef.trim()}`);
 			await openPdfWithAuth({
 				pdfType: "circularity-certificate",
 				documentId: ccRef,
@@ -289,6 +290,8 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 			});
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
+		} finally {
+			setActiveActionKey((current) => (current === `view-cc:${ccRef.trim()}` ? null : current));
 		}
 	}
 
@@ -474,7 +477,8 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 								</tr>
 							) : visibleRows.map((row) => {
 								const ref = getReceptionCertificatePdfReference(row);
-								const isRowBusy = activeActionKey === `view:${ref}` || activeActionKey === `download:${ref}`;
+								const isViewBusy = activeActionKey === `view:${ref}`;
+								const isDownloadBusy = activeActionKey === `download:${ref}`;
 								return (
 									<tr key={row.rcid} className="bg-white transition hover:bg-slate-50/80">
 										<DataCell>{row.rcidDate || "N/A"}</DataCell>
@@ -491,23 +495,23 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 										</DataCell>
 										<DataCell>{row.rcIssuedBy || "N/A"}</DataCell>
 										<DataCell>
-											{renderCircularityCertificateCell(row.circularityCertificateReference, handleViewCircularityCertificate)}
+											{renderCircularityCertificateCell(row.circularityCertificateReference, handleViewCircularityCertificate, activeActionKey === `view-cc:${row.circularityCertificateReference.trim()}`)}
 										</DataCell>
 										<DataCell centered>
 											<div className="flex items-center justify-center gap-1">
 												<ActionButton
-													label={activeActionKey === `view:${ref}` ? "Generating PDF..." : "View"}
+													label={isViewBusy ? "Loading PDF preview..." : "View"}
 													onClick={() => void handleViewReceptionCertificate(row)}
-													disabled={isLoading || isRowBusy}
+													disabled={isLoading || isViewBusy}
 												>
-													<Eye className="h-3.5 w-3.5" />
+													{isViewBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
 												</ActionButton>
 												<ActionButton
-													label={activeActionKey === `download:${ref}` ? "Generating PDF..." : "Download"}
+													label={isDownloadBusy ? "Downloading PDF..." : "Download"}
 													onClick={() => void handleDownloadReceptionCertificate(row)}
-													disabled={isLoading || isRowBusy}
+													disabled={isLoading || isDownloadBusy}
 												>
-													<Download className="h-3.5 w-3.5" />
+													{isDownloadBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
 												</ActionButton>
 												{(role === "admin" || role === "employee") ? (
 													<ActionButton
@@ -523,7 +527,7 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 														label="Remove"
 														danger
 														onClick={() => setConfirmRemoveRcid(row.rcid)}
-														disabled={isLoading || isRowBusy}
+														disabled={isLoading}
 													>
 														<Trash2 className="h-3.5 w-3.5" />
 													</ActionButton>
@@ -642,6 +646,7 @@ function getLinkedRcids(certificate: CircularityCertificateLinkRow) {
 function renderCircularityCertificateCell(
 	circularityCertificateReference: string,
 	onView: (circularityCertificateReference: string) => void,
+	isLoading = false,
 ) {
 	if (!circularityCertificateReference) {
 		return <StatusBadge status="Pending" />;
@@ -651,8 +656,10 @@ function renderCircularityCertificateCell(
 		<button
 			type="button"
 			onClick={() => onView(circularityCertificateReference)}
+			disabled={isLoading}
 			className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-[0_8px_18px_rgba(15,23,42,0.04)] transition hover:border-emerald-300 hover:bg-emerald-100"
 		>
+			{isLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
 			{circularityCertificateReference}
 		</button>
 	);
