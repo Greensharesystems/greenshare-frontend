@@ -110,32 +110,23 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 		setCurrentPage(0);
 	}
 
-	const loadCircularityCertificateLinks = useCallback(async function loadCircularityCertificateLinks() {
-		try {
-			const circularityCertificatesResponse = await apiFetch("/circularity-certificates", { cache: "no-store" });
-			const circularityCertificatesPayload = (await circularityCertificatesResponse.json()) as Array<{
-				ccid?: string;
-				rcid?: string;
-				linkedRcids?: string[];
-			}> | { detail?: string };
+	const loadCircularityCertificateLinks = useCallback(async function loadCircularityCertificateLinks(): Promise<CircularityCertificateLinkRow[]> {
+		const response = await apiFetch("/circularity-certificates", { cache: "no-store" });
+		const payload = (await response.json()) as Array<{
+			ccid?: string;
+			rcid?: string;
+			linkedRcids?: string[];
+		}> | { detail?: string };
 
-			if (!circularityCertificatesResponse.ok || !Array.isArray(circularityCertificatesPayload)) {
-				return;
-			}
-
-			const circularityCertificateLinks: CircularityCertificateLinkRow[] = circularityCertificatesPayload.map((certificate) => ({
-				ccid: String(certificate.ccid ?? ""),
-				rcid: String(certificate.rcid ?? ""),
-				linkedRcids: Array.isArray(certificate.linkedRcids) ? certificate.linkedRcids.map((value) => String(value ?? "")) : [],
-			}));
-
-			setRows((currentRows) => currentRows.map((row) => ({
-				...row,
-				circularityCertificateReference: getLinkedCircularityCertificateReference(row.rcid, circularityCertificateLinks),
-			})));
-		} catch {
-			return;
+		if (!response.ok || !Array.isArray(payload)) {
+			throw new Error(!Array.isArray(payload) ? (payload.detail ?? "Unable to load circularity certificates.") : "Unable to load circularity certificates.");
 		}
+
+		return payload.map((certificate) => ({
+			ccid: String(certificate.ccid ?? ""),
+			rcid: String(certificate.rcid ?? ""),
+			linkedRcids: Array.isArray(certificate.linkedRcids) ? certificate.linkedRcids.map((value) => String(value ?? "")) : [],
+		}));
 	}, []);
 
 	const loadReceptionCertificates = useCallback(async function loadReceptionCertificates() {
@@ -166,13 +157,15 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 				throw new Error(!Array.isArray(certificatesPayload) ? (certificatesPayload.detail ?? "Unable to load reception certificates.") : "Unable to load reception certificates.");
 			}
 
+			const circularityCertificateLinks = role === "customer" ? [] : await loadCircularityCertificateLinks();
+
 			setRows(certificatesPayload.map((certificate) => ({
 				id: Number(certificate.id ?? 0),
 				rcidDate: String(certificate.rcidDate ?? ""),
 				rcid: String(certificate.rcid ?? ""),
 				rnid: String(certificate.rnid ?? ""),
 				linkedRnids: Array.isArray(certificate.linkedRnids) ? certificate.linkedRnids.map((value) => String(value ?? "")) : [],
-				circularityCertificateReference: "",
+				circularityCertificateReference: getLinkedCircularityCertificateReference(String(certificate.rcid ?? ""), circularityCertificateLinks),
 				customerId: String(certificate.customerId ?? ""),
 				producingCompanyName: String(certificate.producingCompanyName ?? ""),
 				referringCompany: String(certificate.referringCompany ?? ""),
@@ -183,15 +176,13 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 				rcIssuedBy: String(certificate.rcIssuedBy ?? ""),
 				status: normalizeStatus(String(certificate.status ?? "Issued")),
 			})));
-
-			void loadCircularityCertificateLinks();
 		} catch (error) {
 			setRows([]);
 			setErrorMessage(error instanceof Error ? error.message : "Unable to load reception certificates.");
 		} finally {
 			setIsLoading(false);
 		}
-	}, [loadCircularityCertificateLinks]);
+	}, [loadCircularityCertificateLinks, role]);
 
 	async function handleConfirmedRemove(rcid: string) {
 		setConfirmRemoveRcid(null);
@@ -281,7 +272,6 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 		}
 
 		try {
-			setActiveActionKey(`view-cc:${ccRef.trim()}`);
 			await openPdfWithAuth({
 				pdfType: "circularity-certificate",
 				documentId: ccRef,
@@ -290,8 +280,6 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 			});
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unable to preview that circularity certificate right now.");
-		} finally {
-			setActiveActionKey((current) => (current === `view-cc:${ccRef.trim()}` ? null : current));
 		}
 	}
 
@@ -495,7 +483,7 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 										</DataCell>
 										<DataCell>{row.rcIssuedBy || "N/A"}</DataCell>
 										<DataCell>
-											{renderCircularityCertificateCell(row.circularityCertificateReference, handleViewCircularityCertificate, activeActionKey === `view-cc:${row.circularityCertificateReference.trim()}`)}
+											{renderCircularityCertificateCell(row.circularityCertificateReference, handleViewCircularityCertificate)}
 										</DataCell>
 										<DataCell centered>
 											<div className="flex items-center justify-center gap-1">
@@ -646,7 +634,6 @@ function getLinkedRcids(certificate: CircularityCertificateLinkRow) {
 function renderCircularityCertificateCell(
 	circularityCertificateReference: string,
 	onView: (circularityCertificateReference: string) => void,
-	isLoading = false,
 ) {
 	if (!circularityCertificateReference) {
 		return <StatusBadge status="Pending" />;
@@ -656,10 +643,8 @@ function renderCircularityCertificateCell(
 		<button
 			type="button"
 			onClick={() => onView(circularityCertificateReference)}
-			disabled={isLoading}
 			className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-[0_8px_18px_rgba(15,23,42,0.04)] transition hover:border-emerald-300 hover:bg-emerald-100"
 		>
-			{isLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
 			{circularityCertificateReference}
 		</button>
 	);
