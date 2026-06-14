@@ -402,7 +402,6 @@ export default function AddReceptionCertficiateForm({
 			}
 
 			router.push("/employee/reception-certificate");
-			router.refresh();
 		} catch {
 			setErrorMessage("Unable to reach the backend. Check that the API is running.");
 		} finally {

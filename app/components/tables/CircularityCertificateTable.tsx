@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Eye, Pencil, Search, Trash2, X } from "lucide-react";
+import { Download, Eye, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 
 import Button from "@/app/components/ui/Button";
 import StatusBadge from "@/app/components/ui/StatusBadge";
@@ -414,7 +414,8 @@ export default function CircularityCertificateTable({
 								</tr>
 							) : visibleRows.map((row) => {
 								const ref = getCircularityCertificatePdfReference(row);
-								const isRowBusy = activeActionKey === `view:${ref}` || activeActionKey === `download:${ref}`;
+								const isViewBusy = activeActionKey === `view:${ref}`;
+								const isDownloadBusy = activeActionKey === `download:${ref}`;
 								return (
 									<tr key={row.ccid || String(row.id)} className="bg-white transition hover:bg-slate-50/80">
 										<DataCell className="whitespace-nowrap">{row.ccidDate || "N/A"}</DataCell>
@@ -433,18 +434,18 @@ export default function CircularityCertificateTable({
 										<DataCell centered className="whitespace-nowrap">
 											<div className="flex items-center justify-center gap-1">
 												<ActionButton
-													label={activeActionKey === `view:${ref}` ? "Generating PDF..." : "View"}
+													label={isViewBusy ? "Loading PDF preview..." : "View"}
 													onClick={() => void handleViewCircularityCertificate(row)}
-													disabled={isLoading || isRowBusy}
+													disabled={isLoading || isViewBusy}
 												>
-													<Eye className="h-3.5 w-3.5" />
+													{isViewBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
 												</ActionButton>
 												<ActionButton
-													label={activeActionKey === `download:${ref}` ? "Generating PDF..." : "Download"}
+													label={isDownloadBusy ? "Downloading PDF..." : "Download"}
 													onClick={() => void handleDownloadCircularityCertificate(row)}
-													disabled={isLoading || isRowBusy}
+													disabled={isLoading || isDownloadBusy}
 												>
-													<Download className="h-3.5 w-3.5" />
+													{isDownloadBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
 												</ActionButton>
 												{(role === "admin" || role === "employee") ? (
 													<ActionButton
@@ -460,7 +461,7 @@ export default function CircularityCertificateTable({
 														label="Remove"
 														danger
 														onClick={() => setConfirmRemoveCcid(row.ccid)}
-														disabled={isLoading || isRowBusy}
+														disabled={isLoading}
 													>
 														<Trash2 className="h-3.5 w-3.5" />
 													</ActionButton>
