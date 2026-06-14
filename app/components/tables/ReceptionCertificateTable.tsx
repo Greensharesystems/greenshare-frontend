@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Eye, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 
@@ -110,15 +110,31 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 		setCurrentPage(0);
 	}
 
-	async function loadReceptionCertificates() {
+	const loadCircularityCertificateLinks = useCallback(async function loadCircularityCertificateLinks(): Promise<CircularityCertificateLinkRow[]> {
+		const response = await apiFetch("/circularity-certificates", { cache: "no-store" });
+		const payload = (await response.json()) as Array<{
+			ccid?: string;
+			rcid?: string;
+			linkedRcids?: string[];
+		}> | { detail?: string };
+
+		if (!response.ok || !Array.isArray(payload)) {
+			throw new Error(!Array.isArray(payload) ? (payload.detail ?? "Unable to load circularity certificates.") : "Unable to load circularity certificates.");
+		}
+
+		return payload.map((certificate) => ({
+			ccid: String(certificate.ccid ?? ""),
+			rcid: String(certificate.rcid ?? ""),
+			linkedRcids: Array.isArray(certificate.linkedRcids) ? certificate.linkedRcids.map((value) => String(value ?? "")) : [],
+		}));
+	}, []);
+
+	const loadReceptionCertificates = useCallback(async function loadReceptionCertificates() {
 		setErrorMessage("");
 		setIsLoading(true);
 
 		try {
-			const [certificatesResponse, circularityCertificatesResponse] = await Promise.all([
-				apiFetch("/reception-certificates", { cache: "no-store" }),
-				apiFetch("/circularity-certificates", { cache: "no-store" }),
-			]);
+			const certificatesResponse = await apiFetch("/reception-certificates", { cache: "no-store" });
 
 			const certificatesPayload = (await certificatesResponse.json()) as Array<{
 				id?: number;
@@ -137,29 +153,11 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 				status?: string;
 			}> | { detail?: string };
 
-			const circularityCertificatesPayload = (await circularityCertificatesResponse.json()) as Array<{
-				ccid?: string;
-				rcid?: string;
-				linkedRcids?: string[];
-			}> | { detail?: string };
-
 			if (!certificatesResponse.ok || !Array.isArray(certificatesPayload)) {
 				throw new Error(!Array.isArray(certificatesPayload) ? (certificatesPayload.detail ?? "Unable to load reception certificates.") : "Unable to load reception certificates.");
 			}
 
-			if (!circularityCertificatesResponse.ok || !Array.isArray(circularityCertificatesPayload)) {
-				throw new Error(
-					!Array.isArray(circularityCertificatesPayload)
-						? (circularityCertificatesPayload.detail ?? "Unable to load circularity certificates.")
-						: "Unable to load circularity certificates.",
-				);
-			}
-
-			const circularityCertificateLinks: CircularityCertificateLinkRow[] = circularityCertificatesPayload.map((certificate) => ({
-				ccid: String(certificate.ccid ?? ""),
-				rcid: String(certificate.rcid ?? ""),
-				linkedRcids: Array.isArray(certificate.linkedRcids) ? certificate.linkedRcids.map((value) => String(value ?? "")) : [],
-			}));
+			const circularityCertificateLinks = role === "customer" ? [] : await loadCircularityCertificateLinks();
 
 			setRows(certificatesPayload.map((certificate) => ({
 				id: Number(certificate.id ?? 0),
@@ -184,7 +182,7 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 		} finally {
 			setIsLoading(false);
 		}
-	}
+	}, [loadCircularityCertificateLinks, role]);
 
 	async function handleConfirmedRemove(rcid: string) {
 		setConfirmRemoveRcid(null);
@@ -333,7 +331,7 @@ export default function ReceptionCertificateTable({}: ReceptionCertificateTableP
 
 	useEffect(() => {
 		void loadReceptionCertificates();
-	}, []);
+	}, [loadReceptionCertificates]);
 
 	const confirmTarget = confirmRemoveRcid ? rows.find((r) => r.rcid === confirmRemoveRcid) : null;
 

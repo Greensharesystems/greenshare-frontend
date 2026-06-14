@@ -37,7 +37,7 @@ type ApiFetchInit = RequestInit & Readonly<{
 }>;
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
-const PDF_REQUEST_TIMEOUT_MS = 180_000;
+const PDF_REQUEST_TIMEOUT_MS = 30_000;
 
 export async function apiFetch(path: string, init?: ApiFetchInit) {
 	const session = readAuthSession();
