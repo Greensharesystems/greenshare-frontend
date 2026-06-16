@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 
+import useAuth from "@/app/hooks/useAuth";
+
 type EnvironmentalImpactMetric = Readonly<{
 	label: string;
 	value: number | "TBU";
@@ -11,6 +13,9 @@ type EnvironmentalImpactMetric = Readonly<{
 
 
 export default function EnvironmentalImpactWidget() {
+	const { session } = useAuth();
+	const isCid0001 = session?.customerId === "CID-0001";
+
 	const metrics: ReadonlyArray<EnvironmentalImpactMetric> = [
 		{
 			label: "Landfill Diversion",
@@ -19,26 +24,26 @@ export default function EnvironmentalImpactWidget() {
 		},
 		{
 			label: "CO2 Reduced",
-			value: "TBU",
-			format: "tbu",
+			value: isCid0001 ? 1_253_000 : "TBU",
+			format: isCid0001 ? "decimal" : "tbu",
 			unit: "Kgs",
 		},
 		{
 			label: "GHG Emissions Reduced",
-			value: "TBU",
-			format: "tbu",
+			value: isCid0001 ? 1_253_000 : "TBU",
+			format: isCid0001 ? "decimal" : "tbu",
 			unit: "Kgs",
 		},
 		{
 			label: "Trees Planted",
-			value: "TBU",
-			format: "tbu",
+			value: isCid0001 ? 20_700 : "TBU",
+			format: isCid0001 ? "decimal" : "tbu",
 			unit: "Trees",
 		},
 		{
 			label: "Homes Powered",
-			value: "TBU",
-			format: "tbu",
+			value: isCid0001 ? 228 : "TBU",
+			format: isCid0001 ? "decimal" : "tbu",
 			unit: "Homes",
 		},
 	];
